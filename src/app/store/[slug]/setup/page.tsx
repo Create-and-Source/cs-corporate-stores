@@ -22,6 +22,7 @@ import {
   HelpCircle,
 } from "lucide-react";
 import { StoreFooter } from "@/components/store/StoreFooter";
+import { SmartSearch } from "@/components/store/SmartSearch";
 
 // Steps
 const STEPS = [
@@ -412,15 +413,11 @@ export default function SetupPage() {
               </div>
             )}
 
-            {/* Search + Categories */}
-            <div className="relative mb-4">
-              <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-smoky" />
-              <input
-                type="text"
-                placeholder="Search products... (hoodie, mug, tote, hat...)"
-                value={searchInput}
-                onChange={(e) => { setSearchInput(e.target.value); setCatalogPage(1); }}
-                className="w-full pl-10 pr-4 py-3 border border-gray-200 text-sm focus:outline-none focus:border-kraft"
+            {/* Smart Search */}
+            <div className="mb-4">
+              <SmartSearch
+                onSearch={(q) => { setSearchInput(q); setCatalogPage(1); }}
+                onCategorySelect={(cat) => { setActiveCategory(cat); setCatalogPage(1); }}
               />
             </div>
 
