@@ -717,7 +717,12 @@ export default function CatalogPage() {
               )}
 
               {/* Step 3: Logo Placement */}
-              {selectedProduct.printLocations && selectedProduct.printLocations.length > 0 && (
+              {(() => {
+                // Use API print locations if available, otherwise default by category
+                const locations = selectedProduct.printLocations && selectedProduct.printLocations.length > 0
+                  ? selectedProduct.printLocations
+                  : getDefaultLocations(selectedProduct.category);
+                return (
                 <div className="border-t border-gray-100 pt-6">
                   <div className="flex items-center gap-2 mb-3">
                     <span className="w-6 h-6 bg-black text-white text-xs font-bold flex items-center justify-center">3</span>
@@ -732,7 +737,7 @@ export default function CatalogPage() {
                     Where should the logo go? Select one or more locations.
                   </p>
                   <div className="flex flex-wrap gap-2">
-                    {selectedProduct.printLocations.map((loc) => (
+                    {locations.map((loc) => (
                       <button
                         key={loc.id}
                         onClick={() => toggleLocation(loc.id)}
@@ -747,7 +752,8 @@ export default function CatalogPage() {
                     ))}
                   </div>
                 </div>
-              )}
+                );
+              })()}
 
               {/* Pricing */}
               <div className="border-t border-gray-100 pt-6">
@@ -851,4 +857,55 @@ export default function CatalogPage() {
       <StoreFooter companyName="ACME Corporation" />
     </div>
   );
+}
+
+// Default print locations by product category
+function getDefaultLocations(category: string): Array<{ id: string; label: string }> {
+  const cat = category.toLowerCase();
+
+  if (cat.includes("shirt") || cat.includes("tee") || cat.includes("top") || cat.includes("polo") || cat.includes("apparel")) {
+    return [
+      { id: "left_chest", label: "Left Chest" },
+      { id: "right_chest", label: "Right Chest" },
+      { id: "front", label: "Full Front" },
+      { id: "back", label: "Full Back" },
+      { id: "left_sleeve_short", label: "Left Sleeve" },
+      { id: "right_sleeve_short", label: "Right Sleeve" },
+    ];
+  }
+  if (cat.includes("hoodie") || cat.includes("sweat") || cat.includes("quarter") || cat.includes("outerwear") || cat.includes("jacket") || cat.includes("vest")) {
+    return [
+      { id: "left_chest", label: "Left Chest" },
+      { id: "right_chest", label: "Right Chest" },
+      { id: "front", label: "Full Front" },
+      { id: "back", label: "Full Back" },
+      { id: "left_sleeve_long", label: "Left Sleeve" },
+      { id: "right_sleeve_long", label: "Right Sleeve" },
+    ];
+  }
+  if (cat.includes("hat") || cat.includes("cap") || cat.includes("headwear") || cat.includes("beanie")) {
+    return [
+      { id: "front", label: "Front Center" },
+      { id: "back", label: "Back" },
+    ];
+  }
+  if (cat.includes("mug") || cat.includes("drink") || cat.includes("bottle") || cat.includes("tumbler")) {
+    return [
+      { id: "wrap", label: "Wrap Around" },
+      { id: "front", label: "Front" },
+      { id: "laser_engrave", label: "Laser Engrave" },
+    ];
+  }
+  if (cat.includes("bag") || cat.includes("tote") || cat.includes("backpack")) {
+    return [
+      { id: "front", label: "Front" },
+      { id: "back", label: "Back" },
+    ];
+  }
+  // Default
+  return [
+    { id: "front", label: "Front" },
+    { id: "back", label: "Back" },
+    { id: "left_chest", label: "Left Chest" },
+  ];
 }
