@@ -17,6 +17,7 @@ interface Product {
   category: string;
   sizes: string[];
   colors: string[];
+  color_images?: Record<string, string>;
 }
 
 interface Store {
@@ -132,15 +133,19 @@ export default function ProductDetailPage() {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-16">
           {/* Product Image */}
           <div className="aspect-square bg-off-white flex items-center justify-center overflow-hidden">
-            {product.images?.[0] ? (
-              <img
-                src={product.images[0]}
-                alt={product.name}
-                className="w-full h-full object-cover"
-              />
-            ) : (
-              <Package size={64} className="text-kraft" />
-            )}
+            {(() => {
+              const colorImg = selectedColor && product.color_images?.[selectedColor];
+              const displayImg = colorImg || product.images?.[0];
+              return displayImg ? (
+                <img
+                  src={displayImg}
+                  alt={product.name}
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                <Package size={64} className="text-kraft" />
+              );
+            })()}
           </div>
 
           {/* Product Info */}

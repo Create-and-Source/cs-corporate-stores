@@ -69,6 +69,7 @@ CREATE TABLE products (
   provider_variant_id TEXT,
   sizes TEXT[] DEFAULT '{}',
   colors TEXT[] DEFAULT '{}',
+  color_images JSONB DEFAULT '{}', -- { "Black": "https://...", "White": "https://..." }
   artwork_url TEXT, -- design file URL
   is_active BOOLEAN DEFAULT true,
   created_at TIMESTAMPTZ DEFAULT now()

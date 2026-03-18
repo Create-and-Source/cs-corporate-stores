@@ -1149,15 +1149,8 @@ function ProductDetailModal({ product, isSelected, onClose, onToggle, storeSlug 
               productBlueprintId={product.providerId}
               storeSlug={storeSlug}
               locations={getDefaultLocations(product.category)}
+              selectedColor={selectedProductColors.size > 0 ? Array.from(selectedProductColors)[0] : undefined}
               onConfigChange={() => {}}
-              selectedColor={selectedProductColors.size > 0 ? [...selectedProductColors][0] : undefined}
-              selectedColors={selectedProductColors.size > 0 ? [...selectedProductColors] : undefined}
-              colorImageUrl={
-                // Prefer real Printify color image, fall back to current gallery image
-                selectedProductColors.size > 0 && colorImages[[...selectedProductColors][0]]
-                  ? colorImages[[...selectedProductColors][0]]
-                  : productImages.length > 0 ? productImages[activeImageIndex] : null
-              }
             />
           </div>
 

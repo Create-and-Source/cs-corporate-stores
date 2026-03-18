@@ -21,6 +21,7 @@ export async function POST(
     images,
     sizes,
     colors,
+    colorImages,
   } = body;
 
   const { data, error } = await supabase
@@ -38,6 +39,7 @@ export async function POST(
       images: images || [],
       sizes: sizes || [],
       colors: colors || [],
+      color_images: colorImages || {},
       is_active: true,
     })
     .select()

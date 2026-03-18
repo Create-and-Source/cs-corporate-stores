@@ -30,6 +30,7 @@ interface CatalogProduct {
   brand?: string;
   colors?: string[];
   clientPrice?: number | null;
+  colorImages?: Record<string, string>;
 }
 
 export default function CatalogPage() {
@@ -183,7 +184,8 @@ export default function CatalogPage() {
             providerId: product.providerId,
             images: product.image ? [product.image] : [],
             sizes: [],
-            colors: [],
+            colors: Array.from(selectedColors),
+            colorImages: product.colorImages || {},
           }),
         }
       );
@@ -425,20 +427,26 @@ export default function CatalogPage() {
               {/* Top section: image + description */}
               <div className="flex gap-6">
                 <div className="w-40 h-40 bg-off-white flex items-center justify-center overflow-hidden flex-shrink-0">
-                  {selectedProduct.image ? (
-                    <img
-                      src={selectedProduct.image}
-                      alt={selectedProduct.name}
-                      className="w-full h-full object-contain p-2"
-                    />
-                  ) : (
-                    <div className="text-center">
-                      <Package size={36} className="mx-auto text-kraft mb-2" />
-                      <p className="text-[9px] text-smoky">
-                        {selectedProduct.brand || selectedProduct.category}
-                      </p>
-                    </div>
-                  )}
+                  {(() => {
+                    // Show color-specific image if a color is selected and we have it
+                    const firstColor = selectedColors.size > 0 ? Array.from(selectedColors)[0] : null;
+                    const colorImg = firstColor && selectedProduct.colorImages?.[firstColor];
+                    const displayImg = colorImg || selectedProduct.image;
+                    return displayImg ? (
+                      <img
+                        src={displayImg}
+                        alt={selectedProduct.name}
+                        className="w-full h-full object-contain p-2"
+                      />
+                    ) : (
+                      <div className="text-center">
+                        <Package size={36} className="mx-auto text-kraft mb-2" />
+                        <p className="text-[9px] text-smoky">
+                          {selectedProduct.brand || selectedProduct.category}
+                        </p>
+                      </div>
+                    );
+                  })()}
                 </div>
                 <div className="flex-1">
                   {selectedProduct.description && (
@@ -527,6 +535,7 @@ export default function CatalogPage() {
                       ? selectedProduct.printLocations
                       : getDefaultLocations(selectedProduct.category)
                   }
+                  selectedColor={selectedColors.size > 0 ? Array.from(selectedColors)[0] : undefined}
                   onConfigChange={() => {}}
                 />
               </div>

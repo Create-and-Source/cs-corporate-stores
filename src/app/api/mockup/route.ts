@@ -3,25 +3,11 @@ import { NextRequest, NextResponse } from "next/server";
 const PRINTIFY_API_KEY = process.env.PRINTIFY_API_KEY || "";
 const PRINTIFY_SHOP_ID = process.env.PRINTIFY_SHOP_ID || "";
 
-// Map placement IDs to Printify image coordinates within the print area
-// x, y = center position (0-1), scale = size relative to print area
-const PLACEMENT_COORDS: Record<string, { x: number; y: number; scale: number }> = {
-  left_chest:  { x: 0.65, y: 0.32, scale: 0.35 },
-  right_chest: { x: 0.35, y: 0.32, scale: 0.35 },
-  front:       { x: 0.5, y: 0.5, scale: 0.8 },
-  full_front:  { x: 0.5, y: 0.5, scale: 1.0 },
-  back:        { x: 0.5, y: 0.5, scale: 0.8 },
-  full_back:   { x: 0.5, y: 0.5, scale: 1.0 },
-  left_sleeve: { x: 0.5, y: 0.5, scale: 0.5 },
-  right_sleeve:{ x: 0.5, y: 0.5, scale: 0.5 },
-};
-
 // POST /api/mockup — Generate a product mockup with the client's logo
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const { blueprintId, imageUrl, position = "front", placement, color, colors } = body;
-    const colorList: string[] = colors || (color ? [color] : []);
+    const { blueprintId, imageUrl, position = "front", color } = body;
 
     if (!blueprintId || !imageUrl) {
       return NextResponse.json(
@@ -29,9 +15,6 @@ export async function POST(req: NextRequest) {
         { status: 400 }
       );
     }
-
-    // Get placement coordinates for logo positioning
-    const coords = PLACEMENT_COORDS[placement || position] || PLACEMENT_COORDS.front;
 
     // Step 1: Upload the image to Printify
     const uploadRes = await fetch("https://api.printify.com/v1/uploads/images.json", {
@@ -99,35 +82,23 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Step 3b: Filter variants by selected colors if provided
+    // Filter variants by selected color if provided
     let matchedVariants = variants;
-    if (colorList.length > 0) {
-      const colorMatches = variants.filter((v: { title?: string; options?: Record<string, string> }) => {
+    if (color) {
+      const colorLower = color.toLowerCase();
+      const colorFiltered = variants.filter((v: { id: number; title?: string }) => {
         const title = (v.title || "").toLowerCase();
-        const colorOption = Object.values(v.options || {}).join(" ").toLowerCase();
-        return colorList.some((c) => {
-          const cl = c.toLowerCase();
-          return title.includes(cl) || colorOption.includes(cl);
-        });
+        // Variant titles are "Color / Size" format
+        const colorPart = title.split(" / ")[0]?.trim();
+        return colorPart === colorLower;
       });
-      if (colorMatches.length > 0) {
-        // Pick one variant per color (first match for each)
-        const seenColors = new Set<string>();
-        const deduped: typeof colorMatches = [];
-        for (const v of colorMatches) {
-          const title = (v.title || "").toLowerCase();
-          const matchedColor = colorList.find((c) => title.includes(c.toLowerCase()));
-          if (matchedColor && !seenColors.has(matchedColor)) {
-            seenColors.add(matchedColor);
-            deduped.push(v);
-          }
-        }
-        matchedVariants = deduped.length > 0 ? deduped : colorMatches;
+      if (colorFiltered.length > 0) {
+        matchedVariants = colorFiltered;
       }
     }
 
-    // Pick up to 8 variants for mockup (one per color)
-    const selectedVariants = matchedVariants.slice(0, 8).map((v: { id: number }) => ({
+    // Pick first few variants for mockup
+    const selectedVariants = matchedVariants.slice(0, 3).map((v: { id: number }) => ({
       id: v.id,
       price: 2500,
       is_enabled: true,
@@ -135,7 +106,28 @@ export async function POST(req: NextRequest) {
 
     const allVariantIds = selectedVariants.map((v: { id: number }) => v.id);
 
-    // Step 4: Create a temporary product with the logo at the correct position
+    // Determine Printify placeholder position and image placement
+    // Printify doesn't have a "left_chest" position — use "front" with offset coordinates
+    const isLeftChest = position === "left_chest";
+    const isRightChest = position === "right_chest";
+    const printifyPosition = (isLeftChest || isRightChest) ? "front" : position;
+
+    // Image placement: x/y are center coordinates (0-1), scale controls size
+    let imgX = 0.5;
+    let imgY = 0.5;
+    let imgScale = 1;
+
+    if (isLeftChest) {
+      imgX = 0.34;   // Left side of chest
+      imgY = 0.39;   // Upper chest area
+      imgScale = 0.35; // Small logo
+    } else if (isRightChest) {
+      imgX = 0.66;   // Right side of chest
+      imgY = 0.39;
+      imgScale = 0.35;
+    }
+
+    // Step 4: Create a temporary product with the logo
     const productRes = await fetch(
       `https://api.printify.com/v1/shops/${PRINTIFY_SHOP_ID}/products.json`,
       {
@@ -156,13 +148,13 @@ export async function POST(req: NextRequest) {
               variant_ids: allVariantIds,
               placeholders: [
                 {
-                  position,
+                  position: printifyPosition,
                   images: [
                     {
                       id: printifyImageId,
-                      x: coords.x,
-                      y: coords.y,
-                      scale: coords.scale,
+                      x: imgX,
+                      y: imgY,
+                      scale: imgScale,
                       angle: 0,
                     },
                   ],
@@ -188,6 +180,7 @@ export async function POST(req: NextRequest) {
     const mockupImages = product.images || [];
 
     // Step 5: Clean up — delete the temp product after getting images
+    // (do this async, don't wait)
     fetch(
       `https://api.printify.com/v1/shops/${PRINTIFY_SHOP_ID}/products/${product.id}.json`,
       {

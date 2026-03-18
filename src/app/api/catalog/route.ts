@@ -6,6 +6,7 @@ import {
 import { ssaImageUrl } from "@/lib/ssactivewear";
 import FE_PRICES_DATA from "@/data/fe-prices";
 import IMAGE_CACHE_DATA from "@/data/product-images";
+import COLOR_IMAGE_DATA from "@/data/product-color-images.json";
 
 const PRINTIFY_API_KEY = process.env.PRINTIFY_API_KEY || "";
 const FE_API_KEY = process.env.FULFILL_ENGINE_API_KEY || "";
@@ -57,6 +58,7 @@ interface CatalogProduct {
   colors?: string[];
   clientPrice: number | null; // in cents, with margin
   hasImage: boolean;
+  colorImages?: Record<string, string>;
 }
 
 // Caches
@@ -67,6 +69,10 @@ const CACHE_TTL = 1000 * 60 * 60;
 
 function loadImageMap(): Record<string, string | null> {
   return IMAGE_CACHE_DATA as Record<string, string | null>;
+}
+
+function loadColorImageMap(): Record<string, Record<string, string>> {
+  return COLOR_IMAGE_DATA as Record<string, Record<string, string>>;
 }
 
 function loadPriceMap(): Map<string, number> {
@@ -90,6 +96,7 @@ export async function GET(req: NextRequest) {
   let allProducts: CatalogProduct[] = [];
   const prices = loadPriceMap();
   const images = loadImageMap();
+  const colorImages = loadColorImageMap();
 
   // --- Printify (shown FIRST — they have photos) ---
   if (provider === "all" || provider === "printify") {
@@ -182,6 +189,7 @@ export async function GET(req: NextRequest) {
             clientPrice = calculateFEClientPrice(wholesaleCost, decorationCost);
           }
 
+          const productColorImages = colorImages[productId];
           feProducts.push({
             id: `fe-${productId}`,
             name: csvInfo.name,
@@ -196,6 +204,7 @@ export async function GET(req: NextRequest) {
             colors: csvInfo.colors,
             clientPrice,
             hasImage: !!(images[productId]),
+            ...(productColorImages && Object.keys(productColorImages).length > 0 && { colorImages: productColorImages }),
           });
         }
 

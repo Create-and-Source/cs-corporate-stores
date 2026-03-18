@@ -21,10 +21,8 @@ interface ProductConfiguratorProps {
   productBlueprintId?: string;
   storeSlug: string;
   locations: Array<{ id: string; label: string }>;
-  onConfigChange: (placements: PlacementConfig[]) => void;
   selectedColor?: string;
-  selectedColors?: string[];
-  colorImageUrl?: string | null;
+  onConfigChange: (placements: PlacementConfig[]) => void;
 }
 
 export function ProductConfigurator({
@@ -35,23 +33,14 @@ export function ProductConfigurator({
   productBlueprintId,
   storeSlug,
   locations,
-  onConfigChange,
   selectedColor,
-  selectedColors,
-  colorImageUrl,
+  onConfigChange,
 }: ProductConfiguratorProps) {
   const [placements, setPlacements] = useState<PlacementConfig[]>([]);
   const [activeLocation, setActiveLocation] = useState<string | null>(null);
   const [showGallery, setShowGallery] = useState(false);
   const [printifyMockups, setPrintifyMockups] = useState<string[]>([]);
   const [generatingMockup, setGeneratingMockup] = useState(false);
-
-  // Reset mockups when color changes so user can regenerate
-  useEffect(() => {
-    if (printifyMockups.length > 0) {
-      setPrintifyMockups([]);
-    }
-  }, [selectedColor]);
 
   // Notify parent of changes
   useEffect(() => {
@@ -138,76 +127,24 @@ export function ProductConfigurator({
         return;
       }
 
-      // Generate mockups for each color × placement combo
-      const logoPlacements = placements.filter((p) => p.logoUrl);
-      const colorsToRender = selectedColors && selectedColors.length > 0
-        ? selectedColors
-        : selectedColor ? [selectedColor] : [undefined];
+      const res = await fetch("/api/mockup", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          blueprintId: parseInt(productBlueprintId),
+          imageUrl,
+          position: firstLogo.locationId,
+          color: selectedColor || undefined,
+        }),
+      });
 
-      // Prepare logo URLs for each placement
-      const placementUrls: Array<{ placement: typeof logoPlacements[0]; url: string }> = [];
-      for (const lp of logoPlacements) {
-        let lpImageUrl = imageUrl;
-        if (lp.logoUrl && lp.logoUrl !== firstLogo.logoUrl && lp.logoUrl.startsWith("data:")) {
-          try {
-            const response = await fetch(lp.logoUrl);
-            const blob = await response.blob();
-            const formData = new FormData();
-            formData.append("file", blob, "logo.png");
-            formData.append("storeId", storeSlug);
-            const uploadRes = await fetch("/api/upload", { method: "POST", body: formData });
-            if (uploadRes.ok) {
-              const ud = await uploadRes.json();
-              if (ud.url) lpImageUrl = ud.url;
-            }
-          } catch {}
-        } else if (lp.logoUrl && !lp.logoUrl.startsWith("data:")) {
-          lpImageUrl = lp.logoUrl;
-        }
-        placementUrls.push({ placement: lp, url: lpImageUrl });
-      }
-
-      // Generate all combos in parallel (batches of 4 to avoid rate limits)
-      const allMockupUrls: string[] = [];
-      const combos: Array<{ color: string | undefined; placement: typeof logoPlacements[0]; url: string }> = [];
-      for (const color of colorsToRender) {
-        for (const pu of placementUrls) {
-          combos.push({ color, placement: pu.placement, url: pu.url });
-        }
-      }
-
-      // Process in batches of 4
-      for (let i = 0; i < combos.length; i += 4) {
-        const batch = combos.slice(i, i + 4);
-        const results = await Promise.all(
-          batch.map(async ({ color, placement: lp, url: lpImageUrl }) => {
-            try {
-              const res = await fetch("/api/mockup", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                  blueprintId: parseInt(productBlueprintId),
-                  imageUrl: lpImageUrl,
-                  position: ["left_chest", "right_chest"].includes(lp.locationId) ? "front" : lp.locationId,
-                  placement: lp.locationId,
-                  color: color || undefined,
-                }),
-              });
-              if (res.ok) {
-                const data = await res.json();
-                return (data.mockups || [])
-                  .filter((m: { src: string }) => m.src)
-                  .map((m: { src: string }) => m.src);
-              }
-            } catch {}
-            return [];
-          })
-        );
-        for (const urls of results) {
-          allMockupUrls.push(...urls);
-        }
-        // Update preview as batches complete
-        setPrintifyMockups([...allMockupUrls]);
+      if (res.ok) {
+        const data = await res.json();
+        const urls = (data.mockups || [])
+          .filter((m: { src: string }) => m.src)
+          .slice(0, 4)
+          .map((m: { src: string }) => m.src);
+        setPrintifyMockups(urls);
       }
     } catch {}
     setGeneratingMockup(false);
@@ -344,8 +281,8 @@ export function ProductConfigurator({
 
           {/* Printify: use real mockup API */}
           {productProvider === "printify" && printifyMockups.length > 0 ? (
-            <div className={`grid gap-2 ${printifyMockups.length === 1 ? "grid-cols-1 max-w-xs" : "grid-cols-2"}`}>
-              {printifyMockups.map((url, i) => (
+            <div className="grid grid-cols-2 gap-2">
+              {printifyMockups.slice(0, 4).map((url, i) => (
                 <div key={i} className="bg-off-white border border-gray-100 overflow-hidden">
                   <img src={url} alt={`Mockup ${i + 1}`} className="w-full h-auto" />
                 </div>
@@ -364,7 +301,7 @@ export function ProductConfigurator({
               {configuredPlacements.map((placement) => (
                 <MockupPreview
                   key={placement.locationId}
-                  productImage={colorImageUrl || productImage}
+                  productImage={productImage}
                   productName={productName}
                   logoUrl={placement.logoUrl!}
                   placement={placement.locationId}
