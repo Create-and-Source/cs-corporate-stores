@@ -205,9 +205,9 @@ async function fetchColorImages(
               images: [
                 {
                   id: defaultLogoImageId,
-                  x: 0.5,
-                  y: 0.5,
-                  scale: 0.6,
+                  x: 0.65,
+                  y: 0.32,
+                  scale: 0.35,
                   angle: 0,
                 },
               ],

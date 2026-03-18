@@ -832,11 +832,18 @@ function ProductDetailModal({ product, isSelected, onClose, onToggle, storeSlug 
           const res = await fetch(`/api/catalog/product-details?blueprintId=${product.providerId}&provider=printify`);
           if (res.ok) {
             const data = await res.json();
-            if (data.images?.length) setProductImages(data.images);
             if (data.colors?.length) setDetailedColors(data.colors);
             if (data.sizes?.length) setDetailedSizes(data.sizes);
             if (data.description) setFullDescription(data.description);
-            if (data.colorImages) setColorImages(data.colorImages);
+            if (data.colorImages && Object.keys(data.colorImages).length > 0) {
+              // Use real color images instead of generic template images
+              setColorImages(data.colorImages);
+              const colorImgUrls = Object.values(data.colorImages) as string[];
+              setProductImages(colorImgUrls);
+              setActiveImageIndex(0);
+            } else if (data.images?.length) {
+              setProductImages(data.images);
+            }
           }
         } catch {}
         setLoadingDetails(false);
