@@ -82,7 +82,7 @@ export function StoreHeader({
             )}
           </a>
 
-          <a href={`/store/${storeSlug}/login`} className="p-2 hover:bg-off-white transition-colors">
+          <a href={`/store/${storeSlug}/account`} className="p-2 hover:bg-off-white transition-colors">
             <User size={20} />
           </a>
         </div>
