@@ -210,13 +210,12 @@ export async function GET(req: NextRequest) {
   let filtered = allProducts;
 
   if (search) {
-    filtered = filtered.filter(
-      (p) =>
-        p.name.toLowerCase().includes(search) ||
-        p.description.toLowerCase().includes(search) ||
-        p.category.toLowerCase().includes(search) ||
-        (p.brand && p.brand.toLowerCase().includes(search))
-    );
+    // Split search into words — ALL words must match somewhere in the product
+    const searchWords = search.split(/\s+/).filter((w) => w.length > 0);
+    filtered = filtered.filter((p) => {
+      const searchableText = `${p.name} ${p.description} ${p.category} ${p.brand || ""}`.toLowerCase();
+      return searchWords.every((word) => searchableText.includes(word));
+    });
   }
 
   if (category !== "All") {
