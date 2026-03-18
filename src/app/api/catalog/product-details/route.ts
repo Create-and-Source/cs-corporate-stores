@@ -60,14 +60,34 @@ export async function GET(req: NextRequest) {
           const colorSet = new Set<string>();
           const sizeSet = new Set<string>();
 
+          // Known size values to distinguish from colors
+          const sizeValues = new Set(["XXS", "2XS", "XS", "S", "M", "L", "XL", "XXL", "2XL", "3XL", "4XL", "5XL", "6XL", "One Size", "OS", "OSFA", "2", "4", "6", "8", "10", "12", "14", "16", "0-3M", "3-6M", "6-12M", "12-18M", "18-24M", "2T", "3T", "4T", "5T", "6T", "YXS", "YS", "YM", "YL", "YXL"]);
+
           for (const v of variants) {
             const title = v.title || "";
             const parts = title.split(" / ");
             if (parts.length >= 2) {
-              colorSet.add(parts[0].trim());
-              sizeSet.add(parts[1].trim());
+              // First part is usually color, second is size
+              const part1 = parts[0].trim();
+              const part2 = parts[1].trim();
+
+              if (sizeValues.has(part2)) {
+                colorSet.add(part1);
+                sizeSet.add(part2);
+              } else if (sizeValues.has(part1)) {
+                sizeSet.add(part1);
+                colorSet.add(part2);
+              } else {
+                colorSet.add(part1);
+                sizeSet.add(part2);
+              }
             } else if (parts.length === 1) {
-              colorSet.add(parts[0].trim());
+              const val = parts[0].trim();
+              if (sizeValues.has(val)) {
+                sizeSet.add(val);
+              } else {
+                colorSet.add(val);
+              }
             }
           }
 

@@ -813,19 +813,38 @@ function ProductDetailModal({ product, isSelected, onClose, onToggle }: {
   const locations = getDefaultLocations(product.category);
 
   // Decoration methods by category
-  const getDecorationMethods = (cat: string) => {
+  const getDecorationMethods = (cat: string, name: string) => {
     const c = cat.toLowerCase();
+    const n = name.toLowerCase();
+
+    if (n.includes("notebook") || n.includes("journal") || n.includes("planner"))
+      return ["Full Cover Print"];
+    if (n.includes("sticker") || n.includes("patch"))
+      return ["Die Cut Print"];
+    if (n.includes("mouse") || n.includes("mousepad"))
+      return ["Full Surface Print"];
+    if (n.includes("poster") || n.includes("canvas") || n.includes("art print"))
+      return ["High-Quality Print"];
+    if (n.includes("phone") || n.includes("case") || n.includes("laptop sleeve"))
+      return ["Full Wrap Print"];
+    if (n.includes("puzzle") || n.includes("playing card"))
+      return ["Full Print"];
+
     if (c.includes("shirt") || c.includes("tee") || c.includes("hoodie") || c.includes("sweat") || c.includes("polo") || c.includes("top"))
       return ["DTG Print", "DTF Print", "Embroidery", "Screen Print", "Heat Transfer"];
     if (c.includes("hat") || c.includes("cap") || c.includes("headwear") || c.includes("beanie"))
       return ["Embroidery", "Heat Transfer", "DTF Print"];
     if (c.includes("mug") || c.includes("drink") || c.includes("bottle") || c.includes("tumbler"))
-      return ["Laser Engrave", "UV Print", "Dye Sublimation"];
+      return ["Dye Sublimation", "UV Print", "Laser Engrave"];
     if (c.includes("bag") || c.includes("tote") || c.includes("backpack"))
       return ["Screen Print", "DTF Print", "Embroidery"];
     if (c.includes("jacket") || c.includes("vest") || c.includes("outerwear") || c.includes("quarter"))
       return ["Embroidery", "Heat Transfer", "DTF Print"];
-    return ["DTF Print", "Embroidery", "Screen Print"];
+    if (c.includes("blanket") || c.includes("towel") || c.includes("pillow"))
+      return ["All-Over Print", "Dye Sublimation"];
+    if (c.includes("office") || c.includes("tech") || c.includes("accessori"))
+      return ["Full Print", "UV Print"];
+    return ["Print", "Embroidery"];
   };
 
   return (
@@ -924,21 +943,31 @@ function ProductDetailModal({ product, isSelected, onClose, onToggle }: {
                 Available Colors ({(detailedColors.length || product.colors?.length || 0)})
               </p>
               <div className="flex flex-wrap gap-1.5">
-                {(detailedColors.length > 0 ? detailedColors : product.colors || []).map((color, colorIndex) => (
-                  <button
-                    key={color}
-                    onClick={() => {
-                      if (productImages.length > 1) {
-                        const totalColors = detailedColors.length || product.colors?.length || 1;
-                        const imgIdx = Math.floor((colorIndex / totalColors) * productImages.length);
-                        setActiveImageIndex(Math.min(imgIdx, productImages.length - 1));
-                      }
-                    }}
-                    className="px-2.5 py-1.5 bg-off-white text-[10px] tracking-wide hover:bg-kraft/10 transition-colors cursor-pointer"
-                  >
-                    {color}
-                  </button>
-                ))}
+                {(detailedColors.length > 0 ? detailedColors : product.colors || []).map((color, colorIndex) => {
+                  // Map each color to an image index — distribute evenly across available images
+                  const totalColors = detailedColors.length || product.colors?.length || 1;
+                  const imgIdx = productImages.length > 1
+                    ? Math.min(Math.round((colorIndex / Math.max(totalColors - 1, 1)) * (productImages.length - 1)), productImages.length - 1)
+                    : 0;
+
+                  return (
+                    <button
+                      key={color}
+                      onClick={() => {
+                        if (productImages.length > 1) {
+                          setActiveImageIndex(imgIdx);
+                        }
+                      }}
+                      className={`px-2.5 py-1.5 text-[10px] tracking-wide transition-colors cursor-pointer ${
+                        activeImageIndex === imgIdx && productImages.length > 1
+                          ? "bg-black text-white"
+                          : "bg-off-white hover:bg-kraft/10"
+                      }`}
+                    >
+                      {color}
+                    </button>
+                  );
+                })}
               </div>
               <p className="text-[9px] text-smoky mt-1.5">Click a color to browse product photos</p>
             </div>
@@ -966,7 +995,7 @@ function ProductDetailModal({ product, isSelected, onClose, onToggle }: {
               Decoration Methods
             </p>
             <div className="flex flex-wrap gap-1.5">
-              {getDecorationMethods(product.category).map((method) => (
+              {getDecorationMethods(product.category, product.name).map((method) => (
                 <span key={method} className="px-3 py-1.5 bg-off-white text-[10px] tracking-wide">
                   {method}
                 </span>
