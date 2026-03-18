@@ -75,17 +75,10 @@ export async function GET(req: NextRequest) {
   return NextResponse.json({
     productId,
     productName: product.name,
-    blankCost: Math.round(blankCost * 100),
-    decorationCost: Math.round(decorationCost * 100),
-    totalCost: Math.round(totalCost * 100),
-    margin: Math.round(margin * 100),
     clientPrice: Math.round(clientPrice * 100),
     clientPriceFormatted: `$${clientPrice.toFixed(2)}`,
-    breakdown: {
-      blank: `$${blankCost.toFixed(2)}`,
-      decoration: `$${decorationCost.toFixed(2)} (${method.replace(/_/g, " ")}, ${locations} location${locations > 1 ? "s" : ""})`,
-      yourMargin: `$${margin.toFixed(2)} (${Math.round(DEFAULT_MARGIN * 100)}%)`,
-    },
+    locations,
+    method: method.replace(/_/g, " "),
   });
 }
 

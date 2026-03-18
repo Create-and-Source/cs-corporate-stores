@@ -55,7 +55,6 @@ export default function CatalogPage() {
   const [pricing, setPricing] = useState<{
     clientPrice: number;
     clientPriceFormatted: string;
-    breakdown?: { blank: string; decoration: string };
   } | null>(null);
   const [loadingPrice, setLoadingPrice] = useState(false);
 
@@ -625,76 +624,54 @@ export default function CatalogPage() {
                     <Loader2 size={18} className="animate-spin text-kraft mr-2" />
                     <span className="text-sm text-smoky">Calculating price...</span>
                   </div>
-                ) : pricing ? (
+                ) : (
                   <div className="bg-off-white p-5 space-y-4">
                     {/* Main price */}
                     <div className="text-center">
-                      <p className="text-3xl font-bold">
-                        {pricing.clientPriceFormatted}
+                      <p className="text-4xl font-bold">
+                        {pricing ? pricing.clientPriceFormatted : customPrice ? `$${parseFloat(customPrice).toFixed(2)}` : "$—"}
                       </p>
                       <p className="text-[10px] tracking-[0.15em] uppercase text-smoky mt-1">
-                        per item
+                        per item · includes decoration
                       </p>
                     </div>
 
-                    {/* Breakdown */}
-                    {pricing.breakdown && (
-                      <div className="text-xs text-smoky space-y-1.5 pt-3 border-t border-gray-200">
-                        <div className="flex justify-between">
-                          <span>Product</span>
-                          <span>{pricing.breakdown.blank}</span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span>Decoration</span>
-                          <span>{pricing.breakdown.decoration}</span>
-                        </div>
+                    {/* If no auto-price, let them enter manually */}
+                    {!pricing && (
+                      <div className="flex items-center gap-3 pt-3 border-t border-gray-200">
+                        <span className="text-xl font-bold">$</span>
+                        <input
+                          type="number"
+                          placeholder="25.00"
+                          value={customPrice}
+                          onChange={(e) => setCustomPrice(e.target.value)}
+                          className="flex-1 px-4 py-3 border border-gray-200 text-lg font-semibold focus:outline-none focus:border-kraft"
+                          step="0.01"
+                          min="0"
+                        />
+                        <span className="text-sm text-smoky">per item</span>
                       </div>
                     )}
 
                     {/* Volume estimates */}
-                    <div className="text-xs space-y-1.5 pt-3 border-t border-gray-200">
-                      <p className="text-[10px] tracking-[0.1em] uppercase text-smoky font-medium mb-2">
-                        Budget Estimates
-                      </p>
-                      {[10, 25, 50, 100].map((qty) => (
-                        <div key={qty} className="flex justify-between">
-                          <span className="text-smoky">{qty} employees</span>
-                          <span className="font-medium text-black">
-                            ${((pricing.clientPrice / 100) * qty).toFixed(2)}
-                          </span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                ) : (
-                  <div className="bg-off-white p-5">
-                    <p className="text-[10px] text-smoky mb-3">
-                      Set the credit price your employees will see
-                    </p>
-                    <div className="flex items-center gap-3">
-                      <span className="text-2xl font-bold">$</span>
-                      <input
-                        type="number"
-                        placeholder="25.00"
-                        value={customPrice}
-                        onChange={(e) => setCustomPrice(e.target.value)}
-                        className="flex-1 px-4 py-3 border border-gray-200 text-lg font-semibold focus:outline-none focus:border-kraft"
-                        step="0.01"
-                        min="0"
-                      />
-                      <span className="text-sm text-smoky">per item</span>
-                    </div>
-
-                    {customPrice && (
-                      <div className="text-xs space-y-1.5 pt-3 mt-3 border-t border-gray-200">
-                        {[10, 25, 50, 100].map((qty) => (
-                          <div key={qty} className="flex justify-between">
-                            <span className="text-smoky">{qty} employees</span>
-                            <span className="font-medium text-black">
-                              ${(parseFloat(customPrice || "0") * qty).toFixed(2)}
-                            </span>
-                          </div>
-                        ))}
+                    {(pricing || customPrice) && (
+                      <div className="text-xs space-y-1.5 pt-3 border-t border-gray-200">
+                        <p className="text-[10px] tracking-[0.1em] uppercase text-smoky font-medium mb-2">
+                          Budget Estimates
+                        </p>
+                        {[10, 25, 50, 100].map((qty) => {
+                          const price = pricing
+                            ? pricing.clientPrice / 100
+                            : parseFloat(customPrice || "0");
+                          return (
+                            <div key={qty} className="flex justify-between">
+                              <span className="text-smoky">{qty} employees</span>
+                              <span className="font-medium text-black">
+                                ${(price * qty).toFixed(2)}
+                              </span>
+                            </div>
+                          );
+                        })}
                       </div>
                     )}
                   </div>
