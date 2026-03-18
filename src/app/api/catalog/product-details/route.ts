@@ -153,12 +153,29 @@ export async function GET(req: NextRequest) {
     }
   }
 
-  // Fulfill Engine products — get color images from SSActivewear
+  // Fulfill Engine products — get color images from static cache or SSActivewear API
   if (provider === "fulfill_engine") {
     const productName = req.nextUrl.searchParams.get("productName") || "";
     const brand = req.nextUrl.searchParams.get("brand") || "";
 
     try {
+      // First try: static color image cache (pre-fetched from SSA by SKU — exact matches)
+      const staticColorImages = await import("@/data/product-color-images.json").then(m => m.default).catch(() => ({})) as Record<string, Record<string, string>>;
+      const cachedColors = staticColorImages[blueprintId];
+
+      if (cachedColors && Object.keys(cachedColors).length > 0) {
+        return NextResponse.json({
+          id: blueprintId,
+          title: productName,
+          description: "",
+          images: [Object.values(cachedColors)[0]],
+          colors: Object.keys(cachedColors),
+          sizes: [],
+          colorImages: cachedColors,
+        });
+      }
+
+      // Fallback: live SSA API lookup by brand/style matching
       const { getStyles, getProducts: getSSAProducts, ssaImageUrl } = await import("@/lib/ssactivewear");
       const styles = await getStyles();
 
@@ -170,7 +187,6 @@ export async function GET(req: NextRequest) {
       });
 
       if (!matchedStyle && brand) {
-        // Try brand-only match
         matchedStyle = styles.find((s) =>
           s.brandName.toLowerCase().includes(brand.toLowerCase()) &&
           (s.title || s.styleName).toLowerCase().split(/\s+/).some((w) => productName.toLowerCase().includes(w))
@@ -180,7 +196,6 @@ export async function GET(req: NextRequest) {
       if (matchedStyle) {
         const products = await getSSAProducts(matchedStyle.styleID);
 
-        // Extract unique colors with images
         const colorImages: Record<string, string> = {};
         const colors: string[] = [];
         const sizes = new Set<string>();
@@ -212,7 +227,6 @@ export async function GET(req: NextRequest) {
         });
       }
 
-      // No SSA match found — return basic info
       return NextResponse.json({
         id: blueprintId,
         title: productName,
