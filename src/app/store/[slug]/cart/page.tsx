@@ -211,20 +211,15 @@ export default function CartPage() {
                 </div>
               </div>
 
-              <button
-                onClick={handleCheckout}
-                disabled={remaining < 0}
-                className={`w-full mt-6 py-4 text-sm tracking-[0.15em] uppercase font-medium transition-all ${
-                  remaining < 0
-                    ? "bg-gray-300 text-gray-500 cursor-not-allowed"
-                    : "bg-black text-white hover:bg-brown"
-                }`}
+              <a
+                href={`/store/${slug}/checkout`}
+                className="w-full mt-6 py-4 text-sm tracking-[0.15em] uppercase font-medium bg-black text-white hover:bg-brown transition-all flex items-center justify-center"
               >
-                Checkout with Credits
-              </button>
+                Proceed to Checkout
+              </a>
 
               <p className="text-[10px] text-smoky text-center mt-3 tracking-wide">
-                Ships directly to your address
+                You&apos;ll enter your shipping address next
               </p>
             </div>
           </div>
