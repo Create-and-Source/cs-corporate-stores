@@ -60,6 +60,32 @@ export default function CatalogPage() {
   } | null>(null);
   const [mockupImages, setMockupImages] = useState<string[]>([]);
   const [generatingMockup, setGeneratingMockup] = useState(false);
+  const [bulkTiers, setBulkTiers] = useState<Array<{
+    label: string;
+    clientPriceFormatted: string;
+    clientPrice: number;
+    savings: number;
+  }>>([]);
+  const [loadingBulk, setLoadingBulk] = useState(false);
+
+  const fetchBulkPricing = async (product: CatalogProduct, method: string = "dtf", locs: number = 1) => {
+    setLoadingBulk(true);
+    try {
+      const params = new URLSearchParams({
+        productId: product.providerId,
+        provider: product.provider,
+        method,
+        locations: String(locs),
+        category: product.category,
+      });
+      const res = await fetch(`/api/catalog/bulk-pricing?${params}`);
+      if (res.ok) {
+        const data = await res.json();
+        setBulkTiers(data.tiers || []);
+      }
+    } catch {}
+    setLoadingBulk(false);
+  };
 
   const generateMockup = async () => {
     if (!selectedProduct || !artworkUrl || selectedProduct.provider !== "printify") return;
@@ -387,6 +413,8 @@ export default function CatalogPage() {
                         setSelectedLocations(new Set());
                         setSelectedColors(new Set());
                         setMockupImages([]);
+                        setBulkTiers([]);
+                        fetchBulkPricing(product);
                         // Auto-set pricing
                         if (product.clientPrice) {
                           setPricing({ clientPrice: product.clientPrice, clientPriceFormatted: `$${(product.clientPrice / 100).toFixed(2)}` });
@@ -755,68 +783,87 @@ export default function CatalogPage() {
                 );
               })()}
 
-              {/* Pricing */}
+              {/* Pricing with Bulk Tiers */}
               <div className="border-t border-gray-100 pt-6">
                 <div className="flex items-center gap-2 mb-3">
                   <span className="w-6 h-6 bg-kraft text-black text-xs font-bold flex items-center justify-center">$</span>
                   <p className="text-sm font-semibold">Pricing</p>
                 </div>
 
-                {loadingPrice ? (
-                  <div className="bg-off-white p-6 flex items-center justify-center">
-                    <Loader2 size={18} className="animate-spin text-kraft mr-2" />
-                    <span className="text-sm text-smoky">Calculating price...</span>
+                {/* Main price */}
+                <div className="bg-off-white p-5 mb-3">
+                  <div className="text-center">
+                    <p className="text-4xl font-bold">
+                      {pricing ? pricing.clientPriceFormatted : customPrice ? `$${parseFloat(customPrice).toFixed(2)}` : "$—"}
+                    </p>
+                    <p className="text-[10px] tracking-[0.15em] uppercase text-smoky mt-1">
+                      per item · includes decoration
+                    </p>
                   </div>
-                ) : (
-                  <div className="bg-off-white p-5 space-y-4">
-                    {/* Main price */}
-                    <div className="text-center">
-                      <p className="text-4xl font-bold">
-                        {pricing ? pricing.clientPriceFormatted : customPrice ? `$${parseFloat(customPrice).toFixed(2)}` : "$—"}
-                      </p>
-                      <p className="text-[10px] tracking-[0.15em] uppercase text-smoky mt-1">
-                        per item · includes decoration
+
+                  {!pricing && (
+                    <div className="flex items-center gap-3 pt-3 mt-3 border-t border-gray-200">
+                      <span className="text-xl font-bold">$</span>
+                      <input
+                        type="number"
+                        placeholder="25.00"
+                        value={customPrice}
+                        onChange={(e) => setCustomPrice(e.target.value)}
+                        className="flex-1 px-4 py-3 border border-gray-200 text-lg font-semibold focus:outline-none focus:border-kraft"
+                        step="0.01"
+                        min="0"
+                      />
+                      <span className="text-sm text-smoky">per item</span>
+                    </div>
+                  )}
+                </div>
+
+                {/* Bulk Volume Pricing Tiers */}
+                {bulkTiers.length > 0 && (
+                  <div className="border border-kraft/20 bg-off-white/50">
+                    <div className="px-4 py-3 bg-kraft/10 border-b border-kraft/20">
+                      <p className="text-xs font-bold tracking-wide uppercase">
+                        Volume Discounts — Order More, Save More
                       </p>
                     </div>
+                    <table className="w-full">
+                      <thead>
+                        <tr className="border-b border-gray-200">
+                          <th className="text-left px-4 py-2 text-[10px] tracking-wider uppercase text-smoky">Quantity</th>
+                          <th className="text-right px-4 py-2 text-[10px] tracking-wider uppercase text-smoky">Price Each</th>
+                          <th className="text-right px-4 py-2 text-[10px] tracking-wider uppercase text-smoky">Savings</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {bulkTiers.map((tier, i) => (
+                          <tr
+                            key={i}
+                            className={`border-b border-gray-100 ${i === 0 ? "" : "hover:bg-kraft/5"}`}
+                          >
+                            <td className="px-4 py-2.5 text-sm font-medium">{tier.label}</td>
+                            <td className="px-4 py-2.5 text-sm font-bold text-right">
+                              {tier.clientPriceFormatted}
+                            </td>
+                            <td className="px-4 py-2.5 text-right">
+                              {tier.savings > 0 ? (
+                                <span className="text-xs font-medium text-success bg-success/10 px-2 py-0.5">
+                                  Save {tier.savings}%
+                                </span>
+                              ) : (
+                                <span className="text-xs text-smoky">—</span>
+                              )}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
 
-                    {/* If no auto-price, let them enter manually */}
-                    {!pricing && (
-                      <div className="flex items-center gap-3 pt-3 border-t border-gray-200">
-                        <span className="text-xl font-bold">$</span>
-                        <input
-                          type="number"
-                          placeholder="25.00"
-                          value={customPrice}
-                          onChange={(e) => setCustomPrice(e.target.value)}
-                          className="flex-1 px-4 py-3 border border-gray-200 text-lg font-semibold focus:outline-none focus:border-kraft"
-                          step="0.01"
-                          min="0"
-                        />
-                        <span className="text-sm text-smoky">per item</span>
-                      </div>
-                    )}
-
-                    {/* Volume estimates */}
-                    {(pricing || customPrice) && (
-                      <div className="text-xs space-y-1.5 pt-3 border-t border-gray-200">
-                        <p className="text-[10px] tracking-[0.1em] uppercase text-smoky font-medium mb-2">
-                          Budget Estimates
-                        </p>
-                        {[10, 25, 50, 100].map((qty) => {
-                          const price = pricing
-                            ? pricing.clientPrice / 100
-                            : parseFloat(customPrice || "0");
-                          return (
-                            <div key={qty} className="flex justify-between">
-                              <span className="text-smoky">{qty} employees</span>
-                              <span className="font-medium text-black">
-                                ${(price * qty).toFixed(2)}
-                              </span>
-                            </div>
-                          );
-                        })}
-                      </div>
-                    )}
+                {loadingBulk && (
+                  <div className="flex items-center justify-center py-4">
+                    <Loader2 size={16} className="animate-spin text-kraft mr-2" />
+                    <span className="text-xs text-smoky">Loading volume pricing...</span>
                   </div>
                 )}
               </div>
