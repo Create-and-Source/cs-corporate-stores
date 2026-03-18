@@ -13,7 +13,6 @@ import {
   LogIn,
   Layers,
   ArrowRight,
-  ExternalLink,
 } from "lucide-react";
 
 const SECTIONS = [

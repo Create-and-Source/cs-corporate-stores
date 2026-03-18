@@ -5,12 +5,9 @@ import { useParams } from "next/navigation";
 import {
   Search,
   UserPlus,
-  Mail,
   Gift,
-  MoreHorizontal,
   X,
   Loader2,
-  Check,
   Trash2,
 } from "lucide-react";
 import { StoreHeader } from "@/components/store/StoreHeader";

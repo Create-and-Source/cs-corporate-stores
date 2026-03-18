@@ -774,10 +774,17 @@ function ProductDetailModal({ product, isSelected, onClose, onToggle }: {
 }) {
   const [bulkTiers, setBulkTiers] = useState<Array<{ label: string; clientPriceFormatted: string; savings: number }>>([]);
   const [loadingTiers, setLoadingTiers] = useState(true);
+  const [productImages, setProductImages] = useState<string[]>([]);
+  const [activeImageIndex, setActiveImageIndex] = useState(0);
+  const [detailedColors, setDetailedColors] = useState<string[]>([]);
+  const [detailedSizes, setDetailedSizes] = useState<string[]>([]);
+  const [fullDescription, setFullDescription] = useState("");
+  const [loadingDetails, setLoadingDetails] = useState(false);
 
-  // Fetch bulk pricing on mount
+  // Fetch bulk pricing + product details on mount
   useEffect(() => {
-    async function fetchPricing() {
+    async function fetchData() {
+      // Bulk pricing
       try {
         const params = new URLSearchParams({
           productId: product.providerId,
@@ -791,8 +798,24 @@ function ProductDetailModal({ product, isSelected, onClose, onToggle }: {
         }
       } catch {}
       setLoadingTiers(false);
+
+      // Printify product details (colors, sizes, all images)
+      if (product.provider === "printify") {
+        setLoadingDetails(true);
+        try {
+          const res = await fetch(`/api/catalog/product-details?blueprintId=${product.providerId}&provider=printify`);
+          if (res.ok) {
+            const data = await res.json();
+            if (data.images?.length) setProductImages(data.images);
+            if (data.colors?.length) setDetailedColors(data.colors);
+            if (data.sizes?.length) setDetailedSizes(data.sizes);
+            if (data.description) setFullDescription(data.description);
+          }
+        } catch {}
+        setLoadingDetails(false);
+      }
     }
-    fetchPricing();
+    fetchData();
   }, [product]);
 
   // Default locations by category
@@ -832,15 +855,39 @@ function ProductDetailModal({ product, isSelected, onClose, onToggle }: {
         </div>
 
         <div className="p-6 space-y-6">
-          {/* Image + Description */}
+          {/* Image Gallery + Description */}
           <div className="flex gap-6">
-            <div className="w-48 h-48 bg-off-white flex items-center justify-center overflow-hidden flex-shrink-0">
-              {product.image ? (
-                <img src={product.image} alt={product.name} className="w-full h-full object-contain p-3" />
-              ) : (
-                <Package size={40} className="text-kraft" />
+            <div className="flex-shrink-0">
+              {/* Main image */}
+              <div className="w-52 h-52 bg-off-white flex items-center justify-center overflow-hidden mb-2">
+                {(productImages.length > 0 ? productImages[activeImageIndex] : product.image) ? (
+                  <img
+                    src={productImages.length > 0 ? productImages[activeImageIndex] : product.image!}
+                    alt={product.name}
+                    className="w-full h-full object-contain p-3"
+                  />
+                ) : (
+                  <Package size={40} className="text-kraft" />
+                )}
+              </div>
+              {/* Thumbnail strip — different colors */}
+              {productImages.length > 1 && (
+                <div className="flex gap-1 overflow-x-auto">
+                  {productImages.slice(0, 8).map((img, i) => (
+                    <button
+                      key={i}
+                      onClick={() => setActiveImageIndex(i)}
+                      className={`w-10 h-10 bg-off-white flex-shrink-0 overflow-hidden border-2 transition-colors ${
+                        activeImageIndex === i ? "border-black" : "border-transparent hover:border-kraft"
+                      }`}
+                    >
+                      <img src={img} alt="" className="w-full h-full object-contain" />
+                    </button>
+                  ))}
+                </div>
               )}
             </div>
+
             <div className="flex-1">
               {product.clientPrice && (
                 <p className="text-3xl font-bold mb-2">
@@ -848,32 +895,52 @@ function ProductDetailModal({ product, isSelected, onClose, onToggle }: {
                   <span className="text-sm text-smoky ml-2 font-normal">per item</span>
                 </p>
               )}
-              {product.description ? (
-                <p className="text-xs text-smoky leading-relaxed">
-                  {product.description}
-                </p>
-              ) : (
-                <p className="text-xs text-smoky leading-relaxed italic">
-                  Product details loading from catalog...
-                </p>
+              <p className="text-xs text-smoky leading-relaxed mb-3">
+                {fullDescription || product.description || "Loading product details..."}
+              </p>
+
+              {/* Available sizes */}
+              {detailedSizes.length > 0 && (
+                <div className="mb-2">
+                  <p className="text-[9px] tracking-wider uppercase text-smoky mb-1">Sizes</p>
+                  <p className="text-xs">{detailedSizes.join(", ")}</p>
+                </div>
+              )}
+
+              {loadingDetails && (
+                <p className="text-[10px] text-kraft-dark animate-pulse">Loading full details...</p>
               )}
             </div>
           </div>
 
           {/* Available Colors */}
-          {product.colors && product.colors.length > 0 && (
+          {(detailedColors.length > 0 || (product.colors && product.colors.length > 0)) && (
             <div>
               <p className="text-xs font-semibold mb-2 flex items-center gap-2">
                 <Palette size={14} className="text-kraft-dark" />
-                Available Colors ({product.colors.length})
+                Available Colors ({(detailedColors.length || product.colors?.length || 0)})
               </p>
               <div className="flex flex-wrap gap-1.5">
-                {product.colors.map((color) => (
-                  <span key={color} className="px-2.5 py-1 bg-off-white text-[10px] tracking-wide">
+                {(detailedColors.length > 0 ? detailedColors : product.colors || []).map((color) => (
+                  <button
+                    key={color}
+                    onClick={() => {
+                      // Try to find an image matching this color
+                      if (productImages.length > 1) {
+                        const colorLower = color.toLowerCase();
+                        const matchIndex = productImages.findIndex((_, i) => i > 0); // Cycle through images
+                        if (matchIndex >= 0) {
+                          setActiveImageIndex((prev) => (prev + 1) % productImages.length);
+                        }
+                      }
+                    }}
+                    className="px-2.5 py-1.5 bg-off-white text-[10px] tracking-wide hover:bg-kraft/10 transition-colors cursor-pointer"
+                  >
                     {color}
-                  </span>
+                  </button>
                 ))}
               </div>
+              <p className="text-[9px] text-smoky mt-1.5">Click a color to browse product photos</p>
             </div>
           )}
 

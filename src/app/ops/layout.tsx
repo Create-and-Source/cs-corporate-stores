@@ -5,9 +5,6 @@ import {
   LayoutDashboard,
   Package,
   Store,
-  DollarSign,
-  Users,
-  Settings,
   ArrowLeft,
 } from "lucide-react";
 import { usePathname } from "next/navigation";

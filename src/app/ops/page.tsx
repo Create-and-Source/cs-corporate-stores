@@ -11,12 +11,8 @@ import {
   Truck,
   CheckCircle,
   AlertCircle,
-  ArrowUpRight,
-  ArrowDownRight,
   ShoppingBag,
   CreditCard,
-  BarChart3,
-  Layers,
 } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 
@@ -61,7 +57,7 @@ export default function OpsDashboard() {
 
   useEffect(() => {
     async function load() {
-      const [ordersRes, storesRes, usersRes, productsRes, creditsRes, orderItemsRes, transactionsRes] =
+      const [ordersRes, storesRes, usersRes, productsRes, creditsRes, orderItemsRes] =
         await Promise.all([
           supabase.from("orders").select("*").order("created_at", { ascending: false }),
           supabase.from("stores").select("*"),
@@ -69,7 +65,6 @@ export default function OpsDashboard() {
           supabase.from("products").select("id, name, price, cost"),
           supabase.from("credit_balances").select("*"),
           supabase.from("order_items").select("*"),
-          supabase.from("credit_transactions").select("*"),
         ]);
 
       const orders = ordersRes.data || [];
@@ -78,7 +73,6 @@ export default function OpsDashboard() {
       const products = productsRes.data || [];
       const credits = creditsRes.data || [];
       const orderItems = orderItemsRes.data || [];
-      const transactions = transactionsRes.data || [];
 
       // Revenue
       const totalRevenue = orders.reduce((s, o) => s + (o.total || 0), 0);

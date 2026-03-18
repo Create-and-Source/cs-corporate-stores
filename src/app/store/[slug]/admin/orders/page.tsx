@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useParams } from "next/navigation";
-import { Package, Search, Clock, Truck, CheckCircle, XCircle, ArrowLeft } from "lucide-react";
+import { Package, Search, Clock, Truck, CheckCircle, ArrowLeft } from "lucide-react";
 import { StoreHeader } from "@/components/store/StoreHeader";
 import { StoreFooter } from "@/components/store/StoreFooter";
 import { supabase } from "@/lib/supabase";

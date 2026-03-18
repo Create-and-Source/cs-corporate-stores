@@ -6,16 +6,13 @@ import {
   Users,
   DollarSign,
   Package,
-  TrendingUp,
   ArrowRight,
   UserPlus,
-  Gift,
   ShoppingBag,
   CreditCard,
   Clock,
   Truck,
   CheckCircle,
-  BarChart3,
   Layers,
 } from "lucide-react";
 import { StoreHeader } from "@/components/store/StoreHeader";

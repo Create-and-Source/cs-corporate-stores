@@ -3,7 +3,6 @@
 import { useState, useEffect } from "react";
 import { useParams } from "next/navigation";
 import {
-  User,
   CreditCard,
   Package,
   ArrowUpRight,
@@ -13,7 +12,6 @@ import {
   Clock,
   Truck,
   CheckCircle,
-  MapPin,
   Mail,
   Building2,
   ArrowRight,

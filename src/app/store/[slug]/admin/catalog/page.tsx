@@ -11,15 +11,9 @@ import {
   ChevronLeft,
   ChevronRight,
   X,
-  MapPin,
-  Printer,
-  Upload,
-  Image,
-  Trash2,
 } from "lucide-react";
 import { StoreHeader } from "@/components/store/StoreHeader";
 import { StoreFooter } from "@/components/store/StoreFooter";
-import { MockupPreview } from "@/components/store/MockupPreview";
 import { ProductConfigurator } from "@/components/store/ProductConfigurator";
 import { supabase } from "@/lib/supabase";
 
@@ -55,17 +49,11 @@ export default function CatalogPage() {
   const [addingId, setAddingId] = useState<string | null>(null);
   const [selectedProduct, setSelectedProduct] = useState<CatalogProduct | null>(null);
   const [customPrice, setCustomPrice] = useState("");
-  const [artworkUrl, setArtworkUrl] = useState<string | null>(null);
-  const [artworkName, setArtworkName] = useState("");
-  const [uploading, setUploading] = useState(false);
-  const [selectedLocations, setSelectedLocations] = useState<Set<string>>(new Set());
   const [selectedColors, setSelectedColors] = useState<Set<string>>(new Set());
   const [pricing, setPricing] = useState<{
     clientPrice: number;
     clientPriceFormatted: string;
   } | null>(null);
-  const [mockupImages, setMockupImages] = useState<string[]>([]);
-  const [generatingMockup, setGeneratingMockup] = useState(false);
   const [bulkTiers, setBulkTiers] = useState<Array<{
     label: string;
     clientPriceFormatted: string;
@@ -101,54 +89,9 @@ export default function CatalogPage() {
     setLoadingBulk(false);
   };
 
-  const generateMockup = async () => {
-    if (!selectedProduct || !artworkUrl || selectedProduct.provider !== "printify") return;
-
-    // Data URLs (local uploads) can't be fetched by Printify
-    // Use a placeholder logo for demo, or need real upload first
-    let imageToUse = artworkUrl;
-    if (artworkUrl.startsWith("data:")) {
-      // Use a sample logo for demo mockups
-      imageToUse = "https://upload.wikimedia.org/wikipedia/commons/thumb/2/2f/Google_2015_logo.svg/1200px-Google_2015_logo.svg.png";
-    }
-
-    setGeneratingMockup(true);
-    setMockupImages([]);
-
-    try {
-      const res = await fetch("/api/mockup", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          blueprintId: parseInt(selectedProduct.providerId),
-          imageUrl: imageToUse,
-          position: "front",
-        }),
-      });
-
-      if (res.ok) {
-        const data = await res.json();
-        if (data.mockups && data.mockups.length > 0) {
-          const urls = data.mockups
-            .filter((m: { src: string; position: string }) => m.src && m.position === "front")
-            .slice(0, 4)
-            .map((m: { src: string }) => m.src);
-          setMockupImages(urls.length > 0 ? urls : data.mockups.filter((m: { src: string }) => m.src).slice(0, 4).map((m: { src: string }) => m.src));
-        }
-      } else {
-        const err = await res.json();
-        console.error("Mockup error:", err);
-      }
-    } catch (e) {
-      console.error("Mockup generation failed:", e);
-    }
-    setGeneratingMockup(false);
-  };
-  const [loadingPrice, setLoadingPrice] = useState(false);
 
   // Fetch pricing when product selected or locations change
   const fetchPricing = async (productId: string, locations: number, method: string) => {
-    setLoadingPrice(true);
     try {
       const res = await fetch(
         `/api/catalog/pricing?productId=${productId}&locations=${locations}&method=${method}`
@@ -163,7 +106,6 @@ export default function CatalogPage() {
     } catch {
       setPricing(null);
     }
-    setLoadingPrice(false);
   };
 
   const toggleColor = (color: string) => {
@@ -178,67 +120,6 @@ export default function CatalogPage() {
     });
   };
 
-  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    // Validate file type
-    const validTypes = ["image/png", "image/jpeg", "image/svg+xml", "application/pdf"];
-    if (!validTypes.includes(file.type)) {
-      alert("Please upload a PNG, JPG, SVG, or PDF file");
-      return;
-    }
-
-    setUploading(true);
-    setArtworkName(file.name);
-
-    try {
-      const formData = new FormData();
-      formData.append("file", file);
-      formData.append("storeId", "a1b2c3d4-e5f6-7890-abcd-ef1234567890");
-
-      const res = await fetch("/api/upload", {
-        method: "POST",
-        body: formData,
-      });
-
-      if (res.ok) {
-        const data = await res.json();
-        setArtworkUrl(data.url);
-      } else {
-        // If storage isn't set up yet, use a local preview
-        const reader = new FileReader();
-        reader.onload = (ev) => {
-          setArtworkUrl(ev.target?.result as string);
-        };
-        reader.readAsDataURL(file);
-      }
-    } catch {
-      // Fallback to local preview
-      const reader = new FileReader();
-      reader.onload = (ev) => {
-        setArtworkUrl(ev.target?.result as string);
-      };
-      reader.readAsDataURL(file);
-    }
-    setUploading(false);
-  };
-
-  const toggleLocation = (locId: string) => {
-    setSelectedLocations((prev) => {
-      const next = new Set(prev);
-      if (next.has(locId)) {
-        next.delete(locId);
-      } else {
-        next.add(locId);
-      }
-      // Refetch pricing with new location count
-      if (selectedProduct?.provider === "fulfill_engine") {
-        fetchPricing(selectedProduct.providerId, next.size || 1, "dtf");
-      }
-      return next;
-    });
-  };
 
   const fetchCatalog = useCallback(async () => {
     setLoading(true);
@@ -259,8 +140,8 @@ export default function CatalogPage() {
       if (data.categories?.length) {
         setCategories(data.categories);
       }
-    } catch (e) {
-      console.error("Failed to fetch catalog:", e);
+    } catch {
+      // Catalog fetch failed silently
     }
     setLoading(false);
   }, [page, search, activeCategory, activeProvider]);
@@ -312,8 +193,8 @@ export default function CatalogPage() {
         setSelectedProduct(null);
         setCustomPrice("");
       }
-    } catch (e) {
-      console.error("Failed to add product:", e);
+    } catch {
+      // Failed to add product silently
     }
     setAddingId(null);
   };
@@ -422,11 +303,7 @@ export default function CatalogPage() {
                       if (!isAdded) {
                         setSelectedProduct(product);
                         setCustomPrice("");
-                        setArtworkUrl(null);
-                        setArtworkName("");
-                        setSelectedLocations(new Set());
                         setSelectedColors(new Set());
-                        setMockupImages([]);
                         setBulkTiers([]);
                         fetchBulkPricing(product);
                         // Auto-set pricing

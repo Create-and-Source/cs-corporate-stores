@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Package, Search, Filter, Download } from "lucide-react";
+import { Package, Search } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 
 interface Order {

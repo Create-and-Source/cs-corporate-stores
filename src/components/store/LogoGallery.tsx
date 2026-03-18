@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Upload, Check, Plus, Trash2, Image, Loader2 } from "lucide-react";
+import { Check, Plus, Trash2, Loader2 } from "lucide-react";
 
 export interface Logo {
   id: string;

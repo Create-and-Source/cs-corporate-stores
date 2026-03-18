@@ -8,11 +8,9 @@ import {
   Package,
   DollarSign,
   CreditCard,
-  ExternalLink,
   Settings,
   ShoppingBag,
   Plus,
-  Gift,
   TrendingUp,
   Eye,
 } from "lucide-react";

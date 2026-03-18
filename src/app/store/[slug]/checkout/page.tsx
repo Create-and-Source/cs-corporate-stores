@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useParams, useRouter } from "next/navigation";
+import { useParams } from "next/navigation";
 import { ArrowLeft, Truck, Loader2, MapPin, Package, Shield } from "lucide-react";
 import { StoreHeader } from "@/components/store/StoreHeader";
 import { StoreFooter } from "@/components/store/StoreFooter";
@@ -17,7 +17,6 @@ interface ShippingRate {
 export default function CheckoutPage() {
   const params = useParams();
   const slug = params.slug as string;
-  const router = useRouter();
   const cart = useCart();
   const [storeName, setStoreName] = useState("Store");
   const creditBalance = 15000; // TODO: pull from user session
