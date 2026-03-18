@@ -131,23 +131,26 @@ export default function StorePage() {
           onSelect={setActiveCategory}
         />
 
-        <div className="max-w-7xl mx-auto px-6 py-12">
-          <div className="flex items-center justify-between mb-8">
-            <h2 className="text-2xl font-bold tracking-tight">
-              {activeCategory === "all" ? "All Products" : activeCategory}
-            </h2>
-            <p className="text-sm text-smoky">
-              {filteredProducts.length} products
+        <div className="max-w-7xl mx-auto px-6 py-16">
+          <div className="flex items-end justify-between mb-10">
+            <div>
+              <h2 className="text-2xl font-bold tracking-tight">
+                {activeCategory === "all" ? "All Products" : activeCategory}
+              </h2>
+              <div className="w-10 h-[2px] bg-kraft mt-3" />
+            </div>
+            <p className="text-[11px] tracking-[0.15em] uppercase text-smoky">
+              {filteredProducts.length} {filteredProducts.length === 1 ? "product" : "products"}
             </p>
           </div>
 
           {filteredProducts.length === 0 ? (
-            <div className="text-center py-16">
+            <div className="text-center py-20">
               <Package size={48} className="mx-auto text-kraft mb-4" />
-              <p className="text-smoky">No products in this category yet</p>
+              <p className="text-smoky text-sm">No products in this category yet</p>
             </div>
           ) : (
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-x-6 gap-y-10">
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-x-6 gap-y-12">
               {filteredProducts.map((product) => (
                 <ProductCard
                   key={product.id}

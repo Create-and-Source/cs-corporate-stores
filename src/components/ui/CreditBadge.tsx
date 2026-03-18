@@ -14,7 +14,7 @@ export function CreditBadge({ balance, size = "sm" }: CreditBadgeProps) {
         size === "lg" ? "px-5 py-3" : "px-3 py-1.5"
       }`}
     >
-      <div className="w-2 h-2 rounded-full bg-success" />
+      <div className="w-1.5 h-1.5 bg-success" />
       <span
         className={`font-semibold tracking-wide ${
           size === "lg" ? "text-lg" : "text-sm"

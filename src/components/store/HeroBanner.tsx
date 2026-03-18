@@ -1,7 +1,5 @@
 "use client";
 
-import { Button } from "../ui/Button";
-
 interface HeroBannerProps {
   companyName: string;
   welcomeMessage?: string | null;
@@ -20,31 +18,44 @@ export function HeroBanner({
         <img
           src={heroImage}
           alt=""
-          className="absolute inset-0 w-full h-full object-cover opacity-40"
+          className="absolute inset-0 w-full h-full object-cover opacity-30"
         />
       ) : (
-        <div className="absolute inset-0 bg-gradient-to-br from-black via-brown to-black" />
+        <div className="absolute inset-0 bg-gradient-to-br from-black via-[#3D1C1C] to-black" />
       )}
 
-      <div className="relative max-w-7xl mx-auto px-6 py-24 md:py-32">
-        <div className="max-w-xl">
-          <p className="text-kraft text-[11px] tracking-[0.3em] uppercase mb-4">
+      {/* Subtle grain overlay for texture */}
+      <div className="absolute inset-0 bg-black/10" />
+
+      <div className="relative max-w-7xl mx-auto px-6 py-28 md:py-40">
+        <div className="max-w-2xl">
+          <p className="text-kraft text-[10px] tracking-[0.4em] uppercase mb-6 font-light">
             Welcome to
           </p>
-          <h1 className="text-4xl md:text-6xl font-bold tracking-tight mb-4">
+
+          <h1 className="text-5xl md:text-7xl font-bold tracking-tight leading-[0.95] mb-2">
             {companyName}
           </h1>
-          <h2 className="text-4xl md:text-6xl font-bold tracking-tight text-kraft mb-6">
+
+          <h2 className="text-5xl md:text-7xl font-bold tracking-tight leading-[0.95] text-kraft mb-8">
             Merch Store
           </h2>
+
+          {/* Accent line */}
+          <div className="w-16 h-[2px] bg-kraft mb-8" />
+
           {welcomeMessage && (
-            <p className="text-gray-300 text-lg mb-8 leading-relaxed">
+            <p className="text-white/60 text-lg mb-10 leading-relaxed max-w-lg">
               {welcomeMessage}
             </p>
           )}
-          <Button variant="secondary" size="lg">
-            <a href="#products">Shop Now</a>
-          </Button>
+
+          <a
+            href="#products"
+            className="inline-flex items-center justify-center bg-kraft text-black px-10 py-4 text-xs tracking-[0.2em] uppercase font-medium hover:bg-kraft-dark transition-all"
+          >
+            Shop Now
+          </a>
         </div>
       </div>
     </section>

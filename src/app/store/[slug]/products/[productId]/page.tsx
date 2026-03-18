@@ -4,7 +4,6 @@ import { useState, useEffect } from "react";
 import { ArrowLeft, Minus, Plus, ShoppingBag, Check, Package } from "lucide-react";
 import { StoreHeader } from "@/components/store/StoreHeader";
 import { StoreFooter } from "@/components/store/StoreFooter";
-import { Button } from "@/components/ui/Button";
 import { useCart } from "@/lib/cart";
 import { supabase } from "@/lib/supabase";
 import { useParams } from "next/navigation";
@@ -20,6 +19,11 @@ interface Product {
   colors: string[];
 }
 
+interface Store {
+  company_name: string;
+  logo_url: string | null;
+}
+
 export default function ProductDetailPage() {
   const params = useParams();
   const productId = params.productId as string;
@@ -27,29 +31,42 @@ export default function ProductDetailPage() {
   const cart = useCart();
 
   const [product, setProduct] = useState<Product | null>(null);
+  const [store, setStore] = useState<Store | null>(null);
   const [loading, setLoading] = useState(true);
   const [selectedSize, setSelectedSize] = useState("");
   const [selectedColor, setSelectedColor] = useState("");
   const [quantity, setQuantity] = useState(1);
   const [added, setAdded] = useState(false);
+  const [creditBalance, setCreditBalance] = useState(0);
 
   useEffect(() => {
     async function load() {
-      const { data } = await supabase
-        .from("products")
-        .select("*")
-        .eq("id", productId)
-        .single();
+      const [{ data: productData }, { data: storeData }] = await Promise.all([
+        supabase.from("products").select("*").eq("id", productId).single(),
+        supabase.from("stores").select("company_name, logo_url, id").eq("slug", slug).single(),
+      ]);
 
-      if (data) {
-        setProduct(data);
-        if (data.sizes?.length) setSelectedSize(data.sizes[0]);
-        if (data.colors?.length) setSelectedColor(data.colors[0]);
+      if (productData) {
+        setProduct(productData);
+        if (productData.sizes?.length) setSelectedSize(productData.sizes[0]);
+        if (productData.colors?.length) setSelectedColor(productData.colors[0]);
       }
+
+      if (storeData) {
+        setStore(storeData);
+        const { data: creditData } = await supabase
+          .from("credit_balances")
+          .select("balance")
+          .eq("store_id", storeData.id)
+          .limit(1)
+          .single();
+        if (creditData) setCreditBalance(creditData.balance);
+      }
+
       setLoading(false);
     }
     load();
-  }, [productId]);
+  }, [productId, slug]);
 
   const handleAddToCart = () => {
     if (!product) return;
@@ -67,10 +84,12 @@ export default function ProductDetailPage() {
     setTimeout(() => setAdded(false), 2000);
   };
 
+  const companyName = store?.company_name || "Store";
+
   if (loading) {
     return (
       <div className="min-h-screen bg-white flex items-center justify-center">
-        <div className="animate-pulse text-smoky">Loading...</div>
+        <div className="animate-pulse text-smoky text-sm tracking-wide">Loading...</div>
       </div>
     );
   }
@@ -92,9 +111,9 @@ export default function ProductDetailPage() {
   return (
     <div className="min-h-screen bg-white">
       <StoreHeader
-        companyName="ACME Corporation"
-        logoUrl={null}
-        creditBalance={15000}
+        companyName={companyName}
+        logoUrl={store?.logo_url || null}
+        creditBalance={creditBalance}
         cartCount={cart.count}
         isAdmin={false}
         storeSlug={slug}
@@ -104,13 +123,13 @@ export default function ProductDetailPage() {
         {/* Back link */}
         <a
           href={`/store/${slug}`}
-          className="inline-flex items-center gap-2 text-smoky text-sm hover:text-black transition-colors mb-8"
+          className="inline-flex items-center gap-2 text-smoky text-[11px] tracking-[0.1em] uppercase hover:text-black transition-colors mb-10"
         >
-          <ArrowLeft size={16} />
+          <ArrowLeft size={14} />
           Back to Store
         </a>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-16">
           {/* Product Image */}
           <div className="aspect-square bg-off-white flex items-center justify-center overflow-hidden">
             {product.images?.[0] ? (
@@ -125,23 +144,29 @@ export default function ProductDetailPage() {
           </div>
 
           {/* Product Info */}
-          <div>
-            <p className="text-[10px] tracking-[0.2em] uppercase text-kraft-dark mb-2">
+          <div className="flex flex-col">
+            <p className="text-[10px] tracking-[0.25em] uppercase text-smoky mb-3">
               {product.category}
             </p>
-            <h1 className="text-3xl font-bold tracking-tight mb-4">
+
+            <h1 className="text-3xl md:text-4xl font-bold tracking-tight mb-4">
               {product.name}
             </h1>
 
-            <p className="text-2xl font-bold mb-6">
-              ${(product.price / 100).toFixed(2)}
-              <span className="text-sm text-smoky ml-2 font-normal uppercase tracking-wider">
+            <div className="flex items-baseline gap-3 mb-8">
+              <p className="text-3xl font-bold">
+                ${(product.price / 100).toFixed(2)}
+              </p>
+              <span className="text-[10px] text-smoky uppercase tracking-[0.2em]">
                 credits
               </span>
-            </p>
+            </div>
+
+            {/* Accent line */}
+            <div className="w-10 h-[2px] bg-kraft mb-8" />
 
             {product.description && (
-              <p className="text-smoky leading-relaxed mb-8">
+              <p className="text-smoky leading-relaxed mb-8 text-[15px]">
                 {product.description}
               </p>
             )}
@@ -149,18 +174,18 @@ export default function ProductDetailPage() {
             {/* Color Picker */}
             {product.colors?.length > 0 && (
               <div className="mb-6">
-                <p className="text-xs tracking-[0.15em] uppercase text-smoky mb-3">
-                  Color — <span className="text-black font-medium">{selectedColor}</span>
+                <p className="text-[10px] tracking-[0.2em] uppercase text-smoky mb-3">
+                  Color &mdash; <span className="text-black font-medium">{selectedColor}</span>
                 </p>
                 <div className="flex flex-wrap gap-2">
                   {product.colors.map((color) => (
                     <button
                       key={color}
                       onClick={() => setSelectedColor(color)}
-                      className={`px-4 py-2 text-xs tracking-wide border transition-all ${
+                      className={`px-4 py-2.5 text-[11px] tracking-wide uppercase border transition-all ${
                         selectedColor === color
                           ? "border-black bg-black text-white"
-                          : "border-gray-200 hover:border-kraft text-smoky"
+                          : "border-gray-200 hover:border-black text-smoky hover:text-black"
                       }`}
                     >
                       {color}
@@ -173,8 +198,8 @@ export default function ProductDetailPage() {
             {/* Size Picker */}
             {product.sizes?.length > 0 && (
               <div className="mb-6">
-                <p className="text-xs tracking-[0.15em] uppercase text-smoky mb-3">
-                  Size — <span className="text-black font-medium">{selectedSize}</span>
+                <p className="text-[10px] tracking-[0.2em] uppercase text-smoky mb-3">
+                  Size &mdash; <span className="text-black font-medium">{selectedSize}</span>
                 </p>
                 <div className="flex flex-wrap gap-2">
                   {product.sizes.map((size) => (
@@ -184,7 +209,7 @@ export default function ProductDetailPage() {
                       className={`w-12 h-12 flex items-center justify-center text-xs font-medium border transition-all ${
                         selectedSize === size
                           ? "border-black bg-black text-white"
-                          : "border-gray-200 hover:border-kraft"
+                          : "border-gray-200 hover:border-black"
                       }`}
                     >
                       {size}
@@ -196,7 +221,7 @@ export default function ProductDetailPage() {
 
             {/* Quantity */}
             <div className="mb-8">
-              <p className="text-xs tracking-[0.15em] uppercase text-smoky mb-3">
+              <p className="text-[10px] tracking-[0.2em] uppercase text-smoky mb-3">
                 Quantity
               </p>
               <div className="flex items-center border border-gray-200 w-fit">
@@ -204,14 +229,14 @@ export default function ProductDetailPage() {
                   onClick={() => setQuantity(Math.max(1, quantity - 1))}
                   className="p-3 hover:bg-off-white transition-colors"
                 >
-                  <Minus size={16} />
+                  <Minus size={14} />
                 </button>
-                <span className="px-6 text-sm font-medium">{quantity}</span>
+                <span className="px-6 text-sm font-medium tabular-nums">{quantity}</span>
                 <button
                   onClick={() => setQuantity(quantity + 1)}
                   className="p-3 hover:bg-off-white transition-colors"
                 >
-                  <Plus size={16} />
+                  <Plus size={14} />
                 </button>
               </div>
             </div>
@@ -219,7 +244,7 @@ export default function ProductDetailPage() {
             {/* Add to Cart */}
             <button
               onClick={handleAddToCart}
-              className={`w-full py-4 text-sm tracking-[0.15em] uppercase font-medium flex items-center justify-center gap-2 transition-all ${
+              className={`w-full py-4 text-xs tracking-[0.2em] uppercase font-medium flex items-center justify-center gap-3 transition-all ${
                 added
                   ? "bg-success text-white"
                   : "bg-black text-white hover:bg-brown"
@@ -227,25 +252,25 @@ export default function ProductDetailPage() {
             >
               {added ? (
                 <>
-                  <Check size={18} />
+                  <Check size={16} />
                   Added to Cart
                 </>
               ) : (
                 <>
-                  <ShoppingBag size={18} />
-                  Add to Cart — ${((product.price * quantity) / 100).toFixed(2)}
+                  <ShoppingBag size={16} />
+                  Add to Cart &mdash; ${((product.price * quantity) / 100).toFixed(2)}
                 </>
               )}
             </button>
 
-            <p className="text-[10px] text-smoky text-center mt-3 tracking-wide">
+            <p className="text-[10px] text-smoky text-center mt-4 tracking-[0.1em] uppercase">
               Ships directly to your address
             </p>
           </div>
         </div>
       </div>
 
-      <StoreFooter companyName="ACME Corporation" />
+      <StoreFooter companyName={companyName} />
     </div>
   );
 }
