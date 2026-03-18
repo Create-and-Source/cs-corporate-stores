@@ -138,26 +138,52 @@ export function ProductConfigurator({
         return;
       }
 
-      const res = await fetch("/api/mockup", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          blueprintId: parseInt(productBlueprintId),
-          imageUrl,
-          position: ["left_chest", "right_chest"].includes(firstLogo.locationId) ? "front" : firstLogo.locationId,
-          placement: firstLogo.locationId,
-          colors: selectedColors && selectedColors.length > 0 ? selectedColors : selectedColor ? [selectedColor] : undefined,
-        }),
-      });
+      // Generate one mockup per configured placement (left chest, back, sleeve, etc.)
+      const logoPlacements = placements.filter((p) => p.logoUrl);
+      const allMockupUrls: string[] = [];
 
-      if (res.ok) {
-        const data = await res.json();
-        const urls = (data.mockups || [])
-          .filter((m: { src: string }) => m.src)
-          .slice(0, 8)
-          .map((m: { src: string }) => m.src);
-        setPrintifyMockups(urls);
+      for (const lp of logoPlacements) {
+        try {
+          let lpImageUrl = imageUrl;
+          // If this placement has a different logo, upload it too
+          if (lp.logoUrl && lp.logoUrl !== firstLogo.logoUrl && lp.logoUrl.startsWith("data:")) {
+            const response = await fetch(lp.logoUrl);
+            const blob = await response.blob();
+            const formData = new FormData();
+            formData.append("file", blob, "logo.png");
+            formData.append("storeId", storeSlug);
+            const uploadRes = await fetch("/api/upload", { method: "POST", body: formData });
+            if (uploadRes.ok) {
+              const ud = await uploadRes.json();
+              if (ud.url) lpImageUrl = ud.url;
+            }
+          } else if (lp.logoUrl && !lp.logoUrl.startsWith("data:")) {
+            lpImageUrl = lp.logoUrl;
+          }
+
+          const res = await fetch("/api/mockup", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              blueprintId: parseInt(productBlueprintId),
+              imageUrl: lpImageUrl,
+              position: ["left_chest", "right_chest"].includes(lp.locationId) ? "front" : lp.locationId,
+              placement: lp.locationId,
+              color: selectedColor || undefined,
+            }),
+          });
+
+          if (res.ok) {
+            const data = await res.json();
+            const urls = (data.mockups || [])
+              .filter((m: { src: string }) => m.src)
+              .map((m: { src: string }) => m.src);
+            allMockupUrls.push(...urls);
+          }
+        } catch {}
       }
+
+      setPrintifyMockups(allMockupUrls);
     } catch {}
     setGeneratingMockup(false);
   };
@@ -293,8 +319,8 @@ export function ProductConfigurator({
 
           {/* Printify: use real mockup API */}
           {productProvider === "printify" && printifyMockups.length > 0 ? (
-            <div className="grid grid-cols-2 gap-2">
-              {printifyMockups.slice(0, 4).map((url, i) => (
+            <div className={`grid gap-2 ${printifyMockups.length === 1 ? "grid-cols-1 max-w-xs" : "grid-cols-2"}`}>
+              {printifyMockups.map((url, i) => (
                 <div key={i} className="bg-off-white border border-gray-100 overflow-hidden">
                   <img src={url} alt={`Mockup ${i + 1}`} className="w-full h-auto" />
                 </div>
