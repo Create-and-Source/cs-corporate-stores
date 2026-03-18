@@ -12,6 +12,9 @@ import {
   X,
   MapPin,
   Printer,
+  Upload,
+  Image,
+  Trash2,
 } from "lucide-react";
 import { StoreHeader } from "@/components/store/StoreHeader";
 import { StoreFooter } from "@/components/store/StoreFooter";
@@ -43,6 +46,68 @@ export default function CatalogPage() {
   const [addingId, setAddingId] = useState<string | null>(null);
   const [selectedProduct, setSelectedProduct] = useState<CatalogProduct | null>(null);
   const [customPrice, setCustomPrice] = useState("");
+  const [artworkUrl, setArtworkUrl] = useState<string | null>(null);
+  const [artworkName, setArtworkName] = useState("");
+  const [uploading, setUploading] = useState(false);
+  const [selectedLocations, setSelectedLocations] = useState<Set<string>>(new Set());
+
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Validate file type
+    const validTypes = ["image/png", "image/jpeg", "image/svg+xml", "application/pdf"];
+    if (!validTypes.includes(file.type)) {
+      alert("Please upload a PNG, JPG, SVG, or PDF file");
+      return;
+    }
+
+    setUploading(true);
+    setArtworkName(file.name);
+
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+      formData.append("storeId", "a1b2c3d4-e5f6-7890-abcd-ef1234567890");
+
+      const res = await fetch("/api/upload", {
+        method: "POST",
+        body: formData,
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        setArtworkUrl(data.url);
+      } else {
+        // If storage isn't set up yet, use a local preview
+        const reader = new FileReader();
+        reader.onload = (ev) => {
+          setArtworkUrl(ev.target?.result as string);
+        };
+        reader.readAsDataURL(file);
+      }
+    } catch {
+      // Fallback to local preview
+      const reader = new FileReader();
+      reader.onload = (ev) => {
+        setArtworkUrl(ev.target?.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+    setUploading(false);
+  };
+
+  const toggleLocation = (locId: string) => {
+    setSelectedLocations((prev) => {
+      const next = new Set(prev);
+      if (next.has(locId)) {
+        next.delete(locId);
+      } else {
+        next.add(locId);
+      }
+      return next;
+    });
+  };
 
   const fetchCatalog = useCallback(async () => {
     setLoading(true);
@@ -226,6 +291,9 @@ export default function CatalogPage() {
                       if (!isAdded) {
                         setSelectedProduct(product);
                         setCustomPrice("");
+                        setArtworkUrl(null);
+                        setArtworkName("");
+                        setSelectedLocations(new Set());
                       }
                     }}
                     className={`border transition-all text-left ${
@@ -359,21 +427,81 @@ export default function CatalogPage() {
                     </p>
                   )}
 
-                  {/* Print locations */}
+                  {/* Upload Logo / Artwork */}
+                  <div className="mb-4">
+                    <p className="text-[10px] tracking-[0.15em] uppercase text-smoky mb-2 flex items-center gap-1">
+                      <Image size={12} />
+                      Upload Logo / Artwork
+                    </p>
+
+                    {artworkUrl ? (
+                      <div className="border border-kraft/30 bg-off-white p-3">
+                        <div className="flex items-center gap-3">
+                          <div className="w-16 h-16 bg-white border border-gray-200 flex items-center justify-center overflow-hidden flex-shrink-0">
+                            <img
+                              src={artworkUrl}
+                              alt="Artwork"
+                              className="max-w-full max-h-full object-contain"
+                            />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-xs font-medium truncate">{artworkName}</p>
+                            <p className="text-[10px] text-success mt-0.5">Uploaded</p>
+                          </div>
+                          <button
+                            onClick={() => {
+                              setArtworkUrl(null);
+                              setArtworkName("");
+                            }}
+                            className="p-1.5 hover:bg-white transition-colors"
+                          >
+                            <Trash2 size={14} className="text-smoky" />
+                          </button>
+                        </div>
+                      </div>
+                    ) : (
+                      <label className="border-2 border-dashed border-gray-200 hover:border-kraft p-6 flex flex-col items-center justify-center cursor-pointer transition-colors">
+                        <input
+                          type="file"
+                          accept=".png,.jpg,.jpeg,.svg,.pdf"
+                          onChange={handleFileUpload}
+                          className="hidden"
+                        />
+                        {uploading ? (
+                          <Loader2 size={24} className="text-kraft animate-spin mb-2" />
+                        ) : (
+                          <Upload size={24} className="text-kraft mb-2" />
+                        )}
+                        <p className="text-xs font-medium">
+                          {uploading ? "Uploading..." : "Drop logo here or click to browse"}
+                        </p>
+                        <p className="text-[10px] text-smoky mt-1">
+                          PNG, JPG, SVG, or PDF
+                        </p>
+                      </label>
+                    )}
+                  </div>
+
+                  {/* Print locations — select where logo goes */}
                   {selectedProduct.printLocations && selectedProduct.printLocations.length > 0 && (
                     <div className="mb-4">
                       <p className="text-[10px] tracking-[0.15em] uppercase text-smoky mb-2 flex items-center gap-1">
                         <MapPin size={12} />
-                        Print Locations
+                        Where should the logo go?
                       </p>
                       <div className="flex flex-wrap gap-1.5">
                         {selectedProduct.printLocations.map((loc) => (
-                          <span
+                          <button
                             key={loc.id}
-                            className="px-2.5 py-1 bg-off-white text-[10px] tracking-wide text-smoky"
+                            onClick={() => toggleLocation(loc.id)}
+                            className={`px-3 py-1.5 text-[10px] tracking-wide transition-all ${
+                              selectedLocations.has(loc.id)
+                                ? "bg-black text-white"
+                                : "bg-off-white text-smoky hover:bg-gray-200"
+                            }`}
                           >
                             {loc.label}
-                          </span>
+                          </button>
                         ))}
                       </div>
                     </div>
@@ -381,10 +509,10 @@ export default function CatalogPage() {
 
                   {/* Print methods */}
                   {selectedProduct.printMethods && selectedProduct.printMethods.length > 0 && (
-                    <div className="mb-6">
+                    <div className="mb-4">
                       <p className="text-[10px] tracking-[0.15em] uppercase text-smoky mb-2 flex items-center gap-1">
                         <Printer size={12} />
-                        Decoration Methods
+                        Decoration Methods Available
                       </p>
                       <div className="flex flex-wrap gap-1.5">
                         {selectedProduct.printMethods.map((method) => (
