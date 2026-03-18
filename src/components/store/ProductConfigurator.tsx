@@ -23,6 +23,7 @@ interface ProductConfiguratorProps {
   locations: Array<{ id: string; label: string }>;
   onConfigChange: (placements: PlacementConfig[]) => void;
   selectedColor?: string;
+  selectedColors?: string[];
   colorImageUrl?: string | null;
 }
 
@@ -36,6 +37,7 @@ export function ProductConfigurator({
   locations,
   onConfigChange,
   selectedColor,
+  selectedColors,
   colorImageUrl,
 }: ProductConfiguratorProps) {
   const [placements, setPlacements] = useState<PlacementConfig[]>([]);
@@ -144,7 +146,7 @@ export function ProductConfigurator({
           imageUrl,
           position: ["left_chest", "right_chest"].includes(firstLogo.locationId) ? "front" : firstLogo.locationId,
           placement: firstLogo.locationId,
-          color: selectedColor || undefined,
+          colors: selectedColors && selectedColors.length > 0 ? selectedColors : selectedColor ? [selectedColor] : undefined,
         }),
       });
 
@@ -152,7 +154,7 @@ export function ProductConfigurator({
         const data = await res.json();
         const urls = (data.mockups || [])
           .filter((m: { src: string }) => m.src)
-          .slice(0, 4)
+          .slice(0, 8)
           .map((m: { src: string }) => m.src);
         setPrintifyMockups(urls);
       }

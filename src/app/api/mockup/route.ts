@@ -20,7 +20,8 @@ const PLACEMENT_COORDS: Record<string, { x: number; y: number; scale: number }> 
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const { blueprintId, imageUrl, position = "front", placement, color } = body;
+    const { blueprintId, imageUrl, position = "front", placement, color, colors } = body;
+    const colorList: string[] = colors || (color ? [color] : []);
 
     if (!blueprintId || !imageUrl) {
       return NextResponse.json(
@@ -98,22 +99,35 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Step 3b: Filter variants by selected color if provided
+    // Step 3b: Filter variants by selected colors if provided
     let matchedVariants = variants;
-    if (color) {
-      const colorLower = color.toLowerCase();
+    if (colorList.length > 0) {
       const colorMatches = variants.filter((v: { title?: string; options?: Record<string, string> }) => {
         const title = (v.title || "").toLowerCase();
         const colorOption = Object.values(v.options || {}).join(" ").toLowerCase();
-        return title.includes(colorLower) || colorOption.includes(colorLower);
+        return colorList.some((c) => {
+          const cl = c.toLowerCase();
+          return title.includes(cl) || colorOption.includes(cl);
+        });
       });
       if (colorMatches.length > 0) {
-        matchedVariants = colorMatches;
+        // Pick one variant per color (first match for each)
+        const seenColors = new Set<string>();
+        const deduped: typeof colorMatches = [];
+        for (const v of colorMatches) {
+          const title = (v.title || "").toLowerCase();
+          const matchedColor = colorList.find((c) => title.includes(c.toLowerCase()));
+          if (matchedColor && !seenColors.has(matchedColor)) {
+            seenColors.add(matchedColor);
+            deduped.push(v);
+          }
+        }
+        matchedVariants = deduped.length > 0 ? deduped : colorMatches;
       }
     }
 
-    // Pick up to 3 variants for mockup
-    const selectedVariants = matchedVariants.slice(0, 3).map((v: { id: number }) => ({
+    // Pick up to 8 variants for mockup (one per color)
+    const selectedVariants = matchedVariants.slice(0, 8).map((v: { id: number }) => ({
       id: v.id,
       price: 2500,
       is_enabled: true,

@@ -1134,6 +1134,7 @@ function ProductDetailModal({ product, isSelected, onClose, onToggle, storeSlug 
               locations={getDefaultLocations(product.category)}
               onConfigChange={() => {}}
               selectedColor={selectedProductColors.size > 0 ? [...selectedProductColors][0] : undefined}
+              selectedColors={selectedProductColors.size > 0 ? [...selectedProductColors] : undefined}
               colorImageUrl={
                 // Prefer real Printify color image, fall back to current gallery image
                 selectedProductColors.size > 0 && colorImages[[...selectedProductColors][0]]
