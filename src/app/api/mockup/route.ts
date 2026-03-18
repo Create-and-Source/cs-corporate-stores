@@ -6,14 +6,14 @@ const PRINTIFY_SHOP_ID = process.env.PRINTIFY_SHOP_ID || "";
 // Map placement IDs to Printify image coordinates within the print area
 // x, y = center position (0-1), scale = size relative to print area
 const PLACEMENT_COORDS: Record<string, { x: number; y: number; scale: number }> = {
-  left_chest:  { x: 0.32, y: 0.38, scale: 0.3 },
-  right_chest: { x: 0.68, y: 0.38, scale: 0.3 },
+  left_chest:  { x: 0.36, y: 0.42, scale: 0.45 },
+  right_chest: { x: 0.64, y: 0.42, scale: 0.45 },
   front:       { x: 0.5, y: 0.5, scale: 0.8 },
   full_front:  { x: 0.5, y: 0.5, scale: 1.0 },
   back:        { x: 0.5, y: 0.5, scale: 0.8 },
   full_back:   { x: 0.5, y: 0.5, scale: 1.0 },
-  left_sleeve: { x: 0.5, y: 0.5, scale: 0.6 },
-  right_sleeve:{ x: 0.5, y: 0.5, scale: 0.6 },
+  left_sleeve: { x: 0.5, y: 0.5, scale: 0.5 },
+  right_sleeve:{ x: 0.5, y: 0.5, scale: 0.5 },
 };
 
 // POST /api/mockup — Generate a product mockup with the client's logo
