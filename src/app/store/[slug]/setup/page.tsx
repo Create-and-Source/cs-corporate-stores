@@ -26,6 +26,7 @@ import {
 } from "lucide-react";
 import { StoreFooter } from "@/components/store/StoreFooter";
 import { SmartSearch } from "@/components/store/SmartSearch";
+import { ProductConfigurator } from "@/components/store/ProductConfigurator";
 
 // Steps
 const STEPS = [
@@ -747,6 +748,7 @@ export default function SetupPage() {
             toggleProduct(previewProduct);
             setPreviewProduct(null);
           }}
+          storeSlug={slug}
         />
       )}
 
@@ -756,16 +758,17 @@ export default function SetupPage() {
 }
 
 // Comprehensive product detail modal for the setup wizard
-function ProductDetailModal({ product, isSelected, onClose, onToggle }: {
+function ProductDetailModal({ product, isSelected, onClose, onToggle, storeSlug }: {
   product: CatalogProduct;
   isSelected: boolean;
   onClose: () => void;
   onToggle: () => void;
+  storeSlug: string;
 }) {
   const [bulkTiers, setBulkTiers] = useState<Array<{ label: string; clientPriceFormatted: string; savings: number }>>([]);
   const [loadingTiers, setLoadingTiers] = useState(true);
   const [productImages, setProductImages] = useState<string[]>([]);
-  const [activeImageIndex, setActiveImageIndex] = useState(0);
+  const [activeImageIndex, setActiveImageIndex] = useState(1); // Skip first image (often a template)
   const [detailedColors, setDetailedColors] = useState<string[]>([]);
   const [detailedSizes, setDetailedSizes] = useState<string[]>([]);
   const [fullDescription, setFullDescription] = useState("");
@@ -1054,23 +1057,30 @@ function ProductDetailModal({ product, isSelected, onClose, onToggle }: {
             ) : null}
           </div>
 
-          {/* Pricing Explanation */}
+          {/* Logo & Placement Configurator */}
+          <div>
+            <p className="text-xs font-semibold mb-2">Upload Logo & Choose Placement</p>
+            <p className="text-[10px] text-smoky mb-4">
+              Select where you want your logo, then upload or choose from your gallery. You&apos;ll see a preview before adding.
+            </p>
+            <ProductConfigurator
+              productName={product.name}
+              productImage={product.image}
+              productCategory={product.category}
+              productProvider={product.provider}
+              productBlueprintId={product.providerId}
+              storeSlug={storeSlug}
+              locations={getDefaultLocations(product.category)}
+              onConfigChange={() => {}}
+            />
+          </div>
+
+          {/* Pricing */}
           {product.clientPrice && (
-            <div className="bg-kraft/10 border border-kraft/20 p-5">
-              <p className="text-xs font-semibold mb-3">How Pricing Works</p>
-              <div className="space-y-3 text-xs">
-                <div className="flex justify-between items-center pb-3 border-b border-kraft/20">
-                  <span className="text-smoky">Your cost per item (includes decoration)</span>
-                  <span className="font-bold text-lg">${(product.clientPrice / 100).toFixed(2)}</span>
-                </div>
-                <p className="text-smoky leading-relaxed">
-                  This is what you pay Create & Source per item. You load credits for your employees at this price.
-                  Your employees &ldquo;spend&rdquo; credits to order — <strong>no money changes hands at checkout</strong>.
-                </p>
-                <p className="text-smoky leading-relaxed">
-                  Most companies absorb the cost as a perk (new hire gifts, bonuses, holiday rewards).
-                  You set the credit budget per employee — they shop within that budget.
-                </p>
+            <div className="bg-kraft/10 border border-kraft/20 p-4">
+              <div className="flex justify-between items-center">
+                <span className="text-xs text-smoky">Price per item (includes decoration)</span>
+                <span className="font-bold text-xl">${(product.clientPrice / 100).toFixed(2)}</span>
               </div>
             </div>
           )}
@@ -1087,7 +1097,7 @@ function ProductDetailModal({ product, isSelected, onClose, onToggle }: {
             {isSelected ? (
               <><X size={16} /> Remove from Store</>
             ) : (
-              <><Plus size={16} /> Add to Store{product.clientPrice ? ` — ${(product.clientPrice / 100).toFixed(2)}/item` : ""}</>
+              <><Plus size={16} /> Add to Store{product.clientPrice ? ` — $${(product.clientPrice / 100).toFixed(2)}/item` : ""}</>
             )}
           </button>
         </div>
