@@ -298,12 +298,13 @@ function mapFECategory(name: string): string {
 
 function mapPrintifyCategory(title: string): string {
   const t = title.toLowerCase();
+  // Check drinkware BEFORE shirts (to catch "travel mug", "steel tumbler", etc.)
+  if (t.includes("mug") || t.includes("tumbler") || t.includes("bottle") || t.includes("cup") || t.includes("can") || t.includes("glass") || t.includes("travel") || t.includes("water") || t.includes("thermos") || t.includes("flask") || t.includes("drinkware")) return "Drinkware";
   if (t.includes("polo")) return "Polos";
   if (t.includes("hoodie") || t.includes("sweatshirt") || t.includes("pullover") || t.includes("crewneck")) return "Hoodies & Sweats";
   if (t.includes("shirt") || t.includes("tee") || t.includes("tank") || t.includes("crop") || t.includes("bodysuit")) return "T-Shirts & Tops";
   if (t.includes("jacket") || t.includes("vest") || t.includes("coat") || t.includes("windbreaker")) return "Outerwear";
   if (t.includes("hat") || t.includes("cap") || t.includes("beanie") || t.includes("visor") || t.includes("bucket")) return "Headwear";
-  if (t.includes("mug") || t.includes("tumbler") || t.includes("bottle") || t.includes("cup") || t.includes("can") || t.includes("glass")) return "Drinkware";
   if (t.includes("bag") || t.includes("tote") || t.includes("backpack") || t.includes("pouch") || t.includes("fanny") || t.includes("duffel")) return "Bags";
   if (t.includes("poster") || t.includes("canvas") || t.includes("print") || t.includes("frame") || t.includes("tapestry")) return "Wall Art";
   if (t.includes("phone") || t.includes("case") || t.includes("laptop") || t.includes("mouse") || t.includes("airpod")) return "Tech";

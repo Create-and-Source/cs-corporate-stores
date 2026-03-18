@@ -1019,6 +1019,11 @@ function ProductDetailModal({ product, isSelected, onClose, onToggle, storeSlug 
                   );
                 })}
               </div>
+              {Object.keys(colorImages).length === 0 && !loadingDetails && (
+                <p className="text-[9px] text-kraft-dark mt-2 italic">
+                  Select colors, then generate a mockup below to see them on the product
+                </p>
+              )}
               <div className="flex items-center justify-between mt-2">
                 <p className="text-[9px] text-smoky">
                   {selectedProductColors.size > 0
