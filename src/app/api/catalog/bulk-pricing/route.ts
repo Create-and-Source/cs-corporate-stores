@@ -4,27 +4,25 @@ import FE_PRICES_DATA from "@/data/fe-prices";
 
 const PRINTIFY_API_KEY = process.env.PRINTIFY_API_KEY || "";
 
-// Printify base costs by category (in dollars)
-const PRINTIFY_BASE_COSTS: Record<string, number> = {
-  "T-Shirts & Tops": 12.95,
-  "Hoodies & Sweats": 24.95,
-  "Outerwear": 32.95,
-  "Headwear": 14.95,
-  "Drinkware": 8.95,
-  "Bags": 12.95,
-  "Wall Art": 11.95,
-  "Tech": 14.95,
-  "Accessories": 6.95,
-  "Office": 9.95,
-  "Bottoms & Activewear": 21.95,
-  "Home & Living": 24.95,
-  "Kids & Baby": 11.95,
-  "Footwear": 18.95,
-  "Polos": 18.95,
-  "Other": 14.95,
+// Market-rate client prices by category (in dollars)
+const PRINTIFY_MARKET_PRICES: Record<string, number> = {
+  "T-Shirts & Tops": 22.00,
+  "Hoodies & Sweats": 45.00,
+  "Outerwear": 55.00,
+  "Headwear": 22.00,
+  "Drinkware": 18.00,
+  "Bags": 25.00,
+  "Wall Art": 22.00,
+  "Tech": 25.00,
+  "Accessories": 15.00,
+  "Office": 18.00,
+  "Bottoms & Activewear": 38.00,
+  "Home & Living": 42.00,
+  "Kids & Baby": 22.00,
+  "Footwear": 35.00,
+  "Polos": 32.00,
+  "Other": 25.00,
 };
-
-const PRINTIFY_MARGIN = 0.20;
 
 // GET /api/catalog/bulk-pricing?productId=K500&provider=fulfill_engine&method=embroidery&locations=1&stitchCount=8000&colors=1&category=Polos
 export async function GET(req: NextRequest) {
@@ -38,9 +36,9 @@ export async function GET(req: NextRequest) {
 
   if (provider === "printify") {
     // Printify bulk pricing — volume discounts on production
-    const baseCost = PRINTIFY_BASE_COSTS[category] || 14.95;
+    const basePrice = PRINTIFY_MARKET_PRICES[category] || 25.00;
 
-    // Printify volume discounts (approximate — varies by provider)
+    // Volume discounts off the market price
     const tiers = [
       { min: 1, max: 24, label: "1-24", discount: 0 },
       { min: 25, max: 49, label: "25-49", discount: 0.05 },
@@ -49,14 +47,13 @@ export async function GET(req: NextRequest) {
       { min: 250, max: 499, label: "250-499", discount: 0.18 },
       { min: 500, max: 999999, label: "500+", discount: 0.22 },
     ].map((tier) => {
-      const discountedCost = baseCost * (1 - tier.discount);
-      const withMargin = discountedCost * (1 + PRINTIFY_MARGIN);
+      const withMargin = basePrice * (1 - tier.discount);
       return {
         minQty: tier.min,
         maxQty: tier.max,
         label: tier.label,
         decorationCost: 0,
-        totalPerItem: discountedCost,
+        totalPerItem: withMargin,
         totalWithMargin: withMargin,
         clientPrice: Math.round(withMargin * 100),
         clientPriceFormatted: `$${withMargin.toFixed(2)}`,

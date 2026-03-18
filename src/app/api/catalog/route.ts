@@ -9,27 +9,37 @@ import IMAGE_CACHE_DATA from "@/data/product-images";
 const PRINTIFY_API_KEY = process.env.PRINTIFY_API_KEY || "";
 const FE_API_KEY = process.env.FULFILL_ENGINE_API_KEY || "";
 const FE_ACCOUNT_ID = process.env.FULFILL_ENGINE_ACCOUNT_ID || "";
-const FE_MARGIN = 0.30; // 30% on Fulfill Engine products
-const PRINTIFY_MARGIN = 0.20; // 20% on Printify products
-
-// Printify typical production costs by category (in cents)
-const PRINTIFY_COSTS: Record<string, number> = {
-  "T-Shirts & Tops": 1295,
-  "Hoodies & Sweats": 2495,
-  "Outerwear": 3295,
-  "Headwear": 1495,
-  "Drinkware": 895,
-  "Bags": 1295,
-  "Wall Art": 1195,
-  "Tech": 1495,
-  "Accessories": 695,
-  "Office": 995,
-  "Bottoms & Activewear": 2195,
-  "Home & Living": 2495,
-  "Kids & Baby": 1195,
-  "Footwear": 1895,
-  "Polos": 1895,
-  "Other": 1495,
+// FE markup: market-rate pricing based on wholesale cost
+// Low-cost items get higher markup, premium items get lower markup
+function calculateFEClientPrice(wholesaleCost: number, decorationCost: number): number {
+  const totalCost = wholesaleCost + decorationCost;
+  // Tiered markup: cheaper items = higher margin, premium = lower margin
+  if (totalCost < 10) return Math.round(totalCost * 2.2 * 100); // 120% markup on cheap items
+  if (totalCost < 20) return Math.round(totalCost * 1.8 * 100); // 80% markup
+  if (totalCost < 35) return Math.round(totalCost * 1.6 * 100); // 60% markup
+  if (totalCost < 50) return Math.round(totalCost * 1.5 * 100); // 50% markup
+  return Math.round(totalCost * 1.4 * 100); // 40% markup on premium items
+}
+// Market-rate pricing by category
+// Based on SwagUp, Axomo, CustomInk, and industry standard corporate merch pricing
+// These are what the CLIENT pays (your cost + your profit built in)
+const PRINTIFY_CLIENT_PRICES: Record<string, number> = {
+  "T-Shirts & Tops": 2200,    // $22 — market rate $18-28 for custom tee
+  "Hoodies & Sweats": 4500,   // $45 — market rate $38-55 for custom hoodie
+  "Outerwear": 5500,          // $55 — market rate $45-75 for custom jacket
+  "Headwear": 2200,           // $22 — market rate $18-28 for custom hat
+  "Drinkware": 1800,          // $18 — market rate $12-25 for custom mug/bottle
+  "Bags": 2500,               // $25 — market rate $18-35 for custom bag
+  "Wall Art": 2200,           // $22 — market rate $15-35 for poster/canvas
+  "Tech": 2500,               // $25 — market rate $18-35 for phone case/laptop sleeve
+  "Accessories": 1500,        // $15 — market rate $8-20 for stickers/patches
+  "Office": 1800,             // $18 — market rate $12-25 for notebooks/mousepads
+  "Bottoms & Activewear": 3800, // $38 — market rate $30-50
+  "Home & Living": 4200,      // $42 — market rate $30-55 for blankets/pillows
+  "Kids & Baby": 2200,        // $22 — market rate $18-28
+  "Footwear": 3500,           // $35 — market rate $25-45
+  "Polos": 3200,              // $32 — market rate $25-45 for custom polo
+  "Other": 2500,              // $25 default
 };
 
 interface CatalogProduct {
@@ -101,8 +111,7 @@ export async function GET(req: NextRequest) {
           const pProducts: CatalogProduct[] = [];
           for (const b of blueprints) {
             const category = mapPrintifyCategory(b.title || "");
-            const baseCost = PRINTIFY_COSTS[category] || 1495;
-            const clientPrice = Math.round(baseCost * (1 + PRINTIFY_MARGIN));
+            const clientPrice = PRINTIFY_CLIENT_PRICES[category] || 2500;
             pProducts.push({
               id: `pf-${b.id}`,
               name: b.title || "Untitled",
@@ -168,9 +177,8 @@ export async function GET(req: NextRequest) {
           let clientPrice: number | null = null;
 
           if (wholesaleCost) {
-            const decorationCost = 4.50; // Default DTF
-            const total = wholesaleCost + decorationCost;
-            clientPrice = Math.round(total * (1 + FE_MARGIN) * 100);
+            const decorationCost = 6.50; // Default DTF per FE price sheet
+            clientPrice = calculateFEClientPrice(wholesaleCost, decorationCost);
           }
 
           feProducts.push({
