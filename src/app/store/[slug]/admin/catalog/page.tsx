@@ -20,6 +20,7 @@ import {
 import { StoreHeader } from "@/components/store/StoreHeader";
 import { StoreFooter } from "@/components/store/StoreFooter";
 import { MockupPreview } from "@/components/store/MockupPreview";
+import { ProductConfigurator } from "@/components/store/ProductConfigurator";
 import { supabase } from "@/lib/supabase";
 
 interface CatalogProduct {
@@ -630,171 +631,28 @@ export default function CatalogPage() {
                 </div>
               )}
 
-              {/* Step 2: Upload Logo */}
+              {/* Step 2 & 3: Logo + Placement Configurator */}
               <div className="border-t border-gray-100 pt-6">
-                <div className="flex items-center gap-2 mb-3">
+                <div className="flex items-center gap-2 mb-4">
                   <span className="w-6 h-6 bg-black text-white text-xs font-bold flex items-center justify-center">2</span>
-                  <p className="text-sm font-semibold">Upload Your Logo</p>
-                  {artworkUrl && (
-                    <Check size={14} className="text-success ml-auto" />
-                  )}
+                  <p className="text-sm font-semibold">Logo & Placement</p>
                 </div>
 
-                {artworkUrl ? (
-                  <div className="border border-kraft/30 bg-off-white p-3">
-                    <div className="flex items-center gap-3">
-                      <div className="w-16 h-16 bg-white border border-gray-200 flex items-center justify-center overflow-hidden flex-shrink-0">
-                        <img src={artworkUrl} alt="Artwork" className="max-w-full max-h-full object-contain" />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-xs font-medium truncate">{artworkName}</p>
-                        <p className="text-[10px] text-success mt-0.5">Uploaded</p>
-                      </div>
-                      <button
-                        onClick={() => { setArtworkUrl(null); setArtworkName(""); }}
-                        className="p-1.5 hover:bg-white transition-colors"
-                      >
-                        <Trash2 size={14} className="text-smoky" />
-                      </button>
-                    </div>
-                  </div>
-                ) : (
-                  <label className="border-2 border-dashed border-gray-200 hover:border-kraft p-8 flex flex-col items-center justify-center cursor-pointer transition-colors">
-                    <input type="file" accept=".png,.jpg,.jpeg,.svg,.pdf" onChange={handleFileUpload} className="hidden" />
-                    {uploading ? (
-                      <Loader2 size={28} className="text-kraft animate-spin mb-2" />
-                    ) : (
-                      <Upload size={28} className="text-kraft mb-2" />
-                    )}
-                    <p className="text-sm font-medium">
-                      {uploading ? "Uploading..." : "Click to upload your logo"}
-                    </p>
-                    <p className="text-[10px] text-smoky mt-1">PNG, JPG, SVG, or PDF — high resolution recommended</p>
-                  </label>
-                )}
+                <ProductConfigurator
+                  productName={selectedProduct.name}
+                  productImage={selectedProduct.image}
+                  productCategory={selectedProduct.category}
+                  productProvider={selectedProduct.provider}
+                  productBlueprintId={selectedProduct.providerId}
+                  storeSlug="acme-corp"
+                  locations={
+                    selectedProduct.printLocations && selectedProduct.printLocations.length > 0
+                      ? selectedProduct.printLocations
+                      : getDefaultLocations(selectedProduct.category)
+                  }
+                  onConfigChange={() => {}}
+                />
               </div>
-
-              {/* Mockup Preview — works for both Printify and FE */}
-              {artworkUrl && (
-                <div className="border-t border-gray-100 pt-6">
-                  <div className="flex items-center justify-between mb-3">
-                    <div className="flex items-center gap-2">
-                      <span className="w-6 h-6 bg-kraft text-black text-xs font-bold flex items-center justify-center">
-                        {"\u2728"}
-                      </span>
-                      <p className="text-sm font-semibold">Preview Your Product</p>
-                    </div>
-                    {selectedProduct.provider === "printify" && !generatingMockup && mockupImages.length === 0 && (
-                      <button
-                        onClick={generateMockup}
-                        className="bg-black text-white px-4 py-2 text-xs tracking-[0.1em] uppercase font-medium hover:bg-brown transition-colors"
-                      >
-                        Generate Mockup
-                      </button>
-                    )}
-                  </div>
-
-                  {/* Printify: API-generated mockups */}
-                  {generatingMockup && (
-                    <div className="bg-off-white p-8 flex flex-col items-center justify-center">
-                      <Loader2 size={32} className="text-kraft animate-spin mb-3" />
-                      <p className="text-sm font-medium">Generating your mockup...</p>
-                      <p className="text-[10px] text-smoky mt-1">This may take 10-15 seconds</p>
-                    </div>
-                  )}
-
-                  {mockupImages.length > 0 && (
-                    <div className="grid grid-cols-2 gap-3">
-                      {mockupImages.slice(0, 4).map((url, i) => (
-                        <div key={i} className="bg-off-white overflow-hidden border border-gray-100">
-                          <img src={url} alt={`Mockup ${i + 1}`} className="w-full h-auto" />
-                        </div>
-                      ))}
-                    </div>
-                  )}
-
-                  {/* FE products: Canvas mockup generator */}
-                  {selectedProduct.provider === "fulfill_engine" && (
-                    <div>
-                      {selectedLocations.size > 0 ? (
-                        <div className="grid grid-cols-2 gap-3">
-                          {Array.from(selectedLocations).map((loc) => (
-                            <MockupPreview
-                              key={loc}
-                              productImage={selectedProduct.image}
-                              productName={selectedProduct.name}
-                              logoUrl={artworkUrl}
-                              placement={loc}
-                              productCategory={selectedProduct.category}
-                            />
-                          ))}
-                        </div>
-                      ) : (
-                        <MockupPreview
-                          productImage={selectedProduct.image}
-                          productName={selectedProduct.name}
-                          logoUrl={artworkUrl}
-                          placement="front"
-                          productCategory={selectedProduct.category}
-                        />
-                      )}
-                      <p className="text-[9px] text-smoky text-center mt-2">
-                        Preview — select logo placements below to see different positions
-                      </p>
-                    </div>
-                  )}
-
-                  {/* Printify: Show quick preview before generating full mockup */}
-                  {selectedProduct.provider === "printify" && !generatingMockup && mockupImages.length === 0 && (
-                    <MockupPreview
-                      productImage={selectedProduct.image}
-                      productName={selectedProduct.name}
-                      logoUrl={artworkUrl}
-                      placement="front"
-                      productCategory={selectedProduct.category}
-                    />
-                  )}
-                </div>
-              )}
-
-              {/* Step 3: Logo Placement */}
-              {(() => {
-                // Use API print locations if available, otherwise default by category
-                const locations = selectedProduct.printLocations && selectedProduct.printLocations.length > 0
-                  ? selectedProduct.printLocations
-                  : getDefaultLocations(selectedProduct.category);
-                return (
-                <div className="border-t border-gray-100 pt-6">
-                  <div className="flex items-center gap-2 mb-3">
-                    <span className="w-6 h-6 bg-black text-white text-xs font-bold flex items-center justify-center">3</span>
-                    <p className="text-sm font-semibold">Logo Placement</p>
-                    {selectedLocations.size > 0 && (
-                      <span className="text-[10px] text-kraft-dark ml-auto">
-                        {selectedLocations.size} location{selectedLocations.size > 1 ? "s" : ""}
-                      </span>
-                    )}
-                  </div>
-                  <p className="text-[10px] text-smoky mb-3">
-                    Where should the logo go? Select one or more locations.
-                  </p>
-                  <div className="flex flex-wrap gap-2">
-                    {locations.map((loc) => (
-                      <button
-                        key={loc.id}
-                        onClick={() => toggleLocation(loc.id)}
-                        className={`px-4 py-2 text-xs tracking-wide transition-all ${
-                          selectedLocations.has(loc.id)
-                            ? "bg-black text-white"
-                            : "bg-off-white text-smoky hover:bg-gray-200"
-                        }`}
-                      >
-                        {loc.label}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-                );
-              })()}
 
               {/* Pricing with Bulk Tiers */}
               <div className="border-t border-gray-100 pt-6">
