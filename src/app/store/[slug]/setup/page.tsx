@@ -796,6 +796,7 @@ function ProductDetailModal({ product, isSelected, onClose, onToggle, storeSlug 
   const [loadingDetails, setLoadingDetails] = useState(false);
   const [showFullDesc, setShowFullDesc] = useState(false);
   const [selectedProductColors, setSelectedProductColors] = useState<Set<string>>(new Set());
+  const [colorImages, setColorImages] = useState<Record<string, string>>({});
 
   const toggleColor = (color: string) => {
     setSelectedProductColors((prev) => {
@@ -835,6 +836,7 @@ function ProductDetailModal({ product, isSelected, onClose, onToggle, storeSlug 
             if (data.colors?.length) setDetailedColors(data.colors);
             if (data.sizes?.length) setDetailedSizes(data.sizes);
             if (data.description) setFullDescription(data.description);
+            if (data.colorImages) setColorImages(data.colorImages);
           }
         } catch {}
         setLoadingDetails(false);
@@ -977,22 +979,25 @@ function ProductDetailModal({ product, isSelected, onClose, onToggle, storeSlug 
                 Available Colors ({(detailedColors.length || product.colors?.length || 0)})
               </p>
               <div className="flex flex-wrap gap-1.5">
-                {(detailedColors.length > 0 ? detailedColors : product.colors || []).map((color, colorIndex) => {
-                  // Map each color to an image index — distribute evenly across available images
-                  const totalColors = detailedColors.length || product.colors?.length || 1;
-                  const imgIdx = productImages.length > 1
-                    ? Math.min(Math.round((colorIndex / Math.max(totalColors - 1, 1)) * (productImages.length - 1)), productImages.length - 1)
-                    : 0;
-
+                {(detailedColors.length > 0 ? detailedColors : product.colors || []).map((color) => {
                   const isColorSelected = selectedProductColors.has(color);
+                  const hasColorImage = !!colorImages[color];
 
                   return (
                     <button
                       key={color}
                       onClick={() => {
                         toggleColor(color);
-                        if (productImages.length > 1) {
-                          setActiveImageIndex(imgIdx);
+                        // If we have a real Printify image for this color, show it
+                        if (hasColorImage) {
+                          // Add color image to productImages if not already there and switch to it
+                          const existingIdx = productImages.indexOf(colorImages[color]);
+                          if (existingIdx >= 0) {
+                            setActiveImageIndex(existingIdx);
+                          } else {
+                            setProductImages((prev) => [...prev, colorImages[color]]);
+                            setActiveImageIndex(productImages.length); // will be the new last index
+                          }
                         }
                       }}
                       className={`px-2.5 py-1.5 text-[10px] tracking-wide transition-colors cursor-pointer flex items-center gap-1 ${
@@ -1129,7 +1134,12 @@ function ProductDetailModal({ product, isSelected, onClose, onToggle, storeSlug 
               locations={getDefaultLocations(product.category)}
               onConfigChange={() => {}}
               selectedColor={selectedProductColors.size > 0 ? [...selectedProductColors][0] : undefined}
-              colorImageUrl={productImages.length > 0 ? productImages[activeImageIndex] : null}
+              colorImageUrl={
+                // Prefer real Printify color image, fall back to current gallery image
+                selectedProductColors.size > 0 && colorImages[[...selectedProductColors][0]]
+                  ? colorImages[[...selectedProductColors][0]]
+                  : productImages.length > 0 ? productImages[activeImageIndex] : null
+              }
             />
           </div>
 
