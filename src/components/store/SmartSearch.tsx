@@ -10,24 +10,24 @@ interface Suggestion {
 }
 
 const SUGGESTIONS: Suggestion[] = [
-  { query: "breathable polos for the sales team", category: "Polos", icon: "👔" },
-  { query: "women's performance polo", category: "Polos", icon: "👔" },
-  { query: "men's heavyweight hoodie", category: "Hoodies & Sweats", icon: "🧥" },
-  { query: "lightweight tee for a summer event", category: "T-Shirts & Tops", icon: "👕" },
-  { query: "premium jacket for executives", category: "Outerwear", icon: "🧥" },
-  { query: "Nike or Under Armour polo", category: "Polos", icon: "✓" },
-  { query: "Carhartt workwear for the crew", category: "Outerwear", icon: "🔨" },
-  { query: "structured trucker hat with logo", category: "Headwear", icon: "🧢" },
-  { query: "insulated tumbler or water bottle", category: "Drinkware", icon: "🥤" },
-  { query: "soft cotton tee for everyday wear", category: "T-Shirts & Tops", icon: "👕" },
-  { query: "fleece quarter zip for fall", category: "Quarter Zips", icon: "🧥" },
-  { query: "new hire welcome kit essentials", category: "T-Shirts & Tops", icon: "🎁" },
-  { query: "holiday gifts under $30", category: "Hoodies & Sweats", icon: "🎄" },
-  { query: "women's fitted v-neck", category: "T-Shirts & Tops", icon: "👚" },
-  { query: "canvas tote for trade shows", category: "Bags", icon: "🎒" },
-  { query: "moisture-wicking athletic wear", category: "T-Shirts & Tops", icon: "💧" },
-  { query: "beanie for winter giveaway", category: "Headwear", icon: "🧣" },
-  { query: "laptop sleeve or tech accessories", category: "Tech", icon: "💻" },
+  { query: "breathable polos for the sales team", category: "Polos", icon: "" },
+  { query: "women's performance polo", category: "Polos", icon: "" },
+  { query: "men's heavyweight hoodie", category: "Hoodies & Sweats", icon: "" },
+  { query: "lightweight tee for a summer event", category: "T-Shirts & Tops", icon: "" },
+  { query: "premium jacket for executives", category: "Outerwear", icon: "" },
+  { query: "Nike or Under Armour polo", category: "Polos", icon: "" },
+  { query: "Carhartt workwear for the crew", category: "Outerwear", icon: "" },
+  { query: "structured trucker hat with logo", category: "Headwear", icon: "" },
+  { query: "insulated tumbler or water bottle", category: "Drinkware", icon: "" },
+  { query: "soft cotton tee for everyday wear", category: "T-Shirts & Tops", icon: "" },
+  { query: "fleece quarter zip for fall", category: "Quarter Zips", icon: "" },
+  { query: "new hire welcome kit essentials", category: "T-Shirts & Tops", icon: "" },
+  { query: "holiday gifts under $30", category: "Hoodies & Sweats", icon: "" },
+  { query: "women's fitted v-neck", category: "T-Shirts & Tops", icon: "" },
+  { query: "canvas tote for trade shows", category: "Bags", icon: "" },
+  { query: "moisture-wicking athletic wear", category: "T-Shirts & Tops", icon: "" },
+  { query: "beanie for winter giveaway", category: "Headwear", icon: "" },
+  { query: "laptop sleeve or tech accessories", category: "Tech", icon: "" },
 ];
 
 // Map natural language to search terms
@@ -151,7 +151,7 @@ export function SmartSearch({ onSearch, onCategorySelect }: SmartSearchProps) {
                   onClick={() => handleSuggestionClick(s)}
                   className="w-full flex items-center gap-3 px-4 py-3 hover:bg-off-white transition-colors text-left border-b border-gray-50 last:border-0"
                 >
-                  <span className="text-lg">{s.icon}</span>
+                  <Search size={12} className="text-smoky flex-shrink-0 mt-1" />
                   <div className="flex-1">
                     <p className="text-sm">{s.query}</p>
                     <p className="text-[10px] text-kraft-dark">{s.category}</p>
