@@ -14,17 +14,28 @@ const CACHE_TTL = 1000 * 60 * 60; // 1 hour
 // Known size values to distinguish from colors
 const SIZE_VALUES = new Set(["XXS", "2XS", "XS", "S", "M", "L", "XL", "XXL", "2XL", "3XL", "4XL", "5XL", "6XL", "One Size", "OS", "OSFA", "2", "4", "6", "8", "10", "12", "14", "16", "0-3M", "3-6M", "6-12M", "12-18M", "18-24M", "2T", "3T", "4T", "5T", "6T", "YXS", "YS", "YM", "YL", "YXL"]);
 
+// Detect if a value is a size (dimensions, measurements, or known size labels)
+function isSize(val: string): boolean {
+  if (SIZE_VALUES.has(val)) return true;
+  // Match dimension patterns: 30" × 40", 11oz, 15oz, 8.5"x11", 30x40, etc.
+  if (/^\d+["']?\s*[×xX]\s*\d+["']?$/.test(val)) return true;
+  if (/^\d+\s*oz$/i.test(val)) return true;
+  if (/^\d+["']\s*$/.test(val)) return true;
+  if (/^\d+\.\d+["']?\s*[×xX]\s*\d+\.\d+["']?$/.test(val)) return true;
+  return false;
+}
+
 function parseVariantTitle(title: string): { color: string; size: string } {
   const parts = title.split(" / ");
   if (parts.length >= 2) {
     const part1 = parts[0].trim();
     const part2 = parts[1].trim();
-    if (SIZE_VALUES.has(part2)) return { color: part1, size: part2 };
-    if (SIZE_VALUES.has(part1)) return { color: part2, size: part1 };
+    if (isSize(part2)) return { color: part1, size: part2 };
+    if (isSize(part1)) return { color: part2, size: part1 };
     return { color: part1, size: part2 };
   }
   const val = (parts[0] || "").trim();
-  if (SIZE_VALUES.has(val)) return { color: "", size: val };
+  if (isSize(val)) return { color: "", size: val };
   return { color: val, size: "" };
 }
 
