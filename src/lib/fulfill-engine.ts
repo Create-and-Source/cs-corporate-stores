@@ -1,11 +1,12 @@
 // ============================================
 // Fulfill Engine API Client
 // Docs: help.fulfillengine.com/en/api-guide
+// Base URL: https://api.fulfillengine.com/api
 // ============================================
 
 const ACCOUNT_ID = process.env.FULFILL_ENGINE_ACCOUNT_ID!;
 const API_KEY = process.env.FULFILL_ENGINE_API_KEY!;
-const BASE_URL = "https://api.fulfillengine.com";
+const BASE_URL = "https://api.fulfillengine.com/api";
 
 async function feRequest(endpoint: string, options: RequestInit = {}) {
   const res = await fetch(`${BASE_URL}${endpoint}`, {
@@ -18,13 +19,29 @@ async function feRequest(endpoint: string, options: RequestInit = {}) {
   });
 
   if (!res.ok) {
-    const error = await res.json().catch(() => ({}));
+    const error = await res.text().catch(() => "");
     throw new Error(
-      `Fulfill Engine API error ${res.status}: ${JSON.stringify(error)}`
+      `Fulfill Engine API error ${res.status}: ${error}`
     );
   }
 
-  return res.json();
+  const text = await res.text();
+  return text ? JSON.parse(text) : null;
+}
+
+// Get all catalog product IDs
+export async function getFulfillEngineProductIds(): Promise<string[]> {
+  return feRequest(`/accounts/${ACCOUNT_ID}/catalogproducts/ids`, {
+    method: "POST",
+  });
+}
+
+// Get product details for up to 50 products at a time
+export async function getFulfillEngineProducts(productIds: string[]) {
+  return feRequest(`/accounts/${ACCOUNT_ID}/catalogproducts`, {
+    method: "POST",
+    body: JSON.stringify({ catalogProductIds: productIds.slice(0, 50) }),
+  });
 }
 
 // Submit an order to Fulfill Engine
@@ -96,17 +113,12 @@ export async function createFulfillEngineOrder(params: {
   });
 }
 
-// Get catalog products
-export async function getFulfillEngineCatalog() {
-  return feRequest(`/accounts/${ACCOUNT_ID}/catalog/products`);
-}
-
 // Get order status
 export async function getFulfillEngineOrder(orderId: string) {
   return feRequest(`/accounts/${ACCOUNT_ID}/orders/${orderId}`);
 }
 
-// Check inventory for a SKU
-export async function checkInventory(sku: string) {
-  return feRequest(`/accounts/${ACCOUNT_ID}/inventory?sku=${sku}`);
+// Test authentication
+export async function testFulfillEngineAuth() {
+  return feRequest(`/accounts/${ACCOUNT_ID}/authentication-test`);
 }

@@ -30,6 +30,7 @@ export default function CatalogPage() {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [activeCategory, setActiveCategory] = useState("All");
+  const [activeProvider, setActiveProvider] = useState("all");
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [total, setTotal] = useState(0);
@@ -43,6 +44,7 @@ export default function CatalogPage() {
         page: String(page),
         ...(search && { search }),
         ...(activeCategory !== "All" && { category: activeCategory }),
+        ...(activeProvider !== "all" && { provider: activeProvider }),
       });
 
       const res = await fetch(`/api/catalog?${params}`);
@@ -58,7 +60,7 @@ export default function CatalogPage() {
       console.error("Failed to fetch catalog:", e);
     }
     setLoading(false);
-  }, [page, search, activeCategory]);
+  }, [page, search, activeCategory, activeProvider]);
 
   useEffect(() => {
     fetchCatalog();
@@ -109,8 +111,8 @@ export default function CatalogPage() {
               Product Catalog
             </h1>
             <p className="text-smoky text-sm mt-1">
-              {total.toLocaleString()} products available from Printify.
-              Add items to your client stores.
+              {total.toLocaleString()} products available.
+              Add items to your store.
             </p>
           </div>
           <div className="text-right">
