@@ -774,6 +774,16 @@ function ProductDetailModal({ product, isSelected, onClose, onToggle, storeSlug 
   const [fullDescription, setFullDescription] = useState("");
   const [loadingDetails, setLoadingDetails] = useState(false);
   const [showFullDesc, setShowFullDesc] = useState(false);
+  const [selectedProductColors, setSelectedProductColors] = useState<Set<string>>(new Set());
+
+  const toggleColor = (color: string) => {
+    setSelectedProductColors((prev) => {
+      const next = new Set(prev);
+      if (next.has(color)) next.delete(color);
+      else next.add(color);
+      return next;
+    });
+  };
 
   // Fetch bulk pricing + product details on mount
   useEffect(() => {
@@ -953,26 +963,51 @@ function ProductDetailModal({ product, isSelected, onClose, onToggle, storeSlug 
                     ? Math.min(Math.round((colorIndex / Math.max(totalColors - 1, 1)) * (productImages.length - 1)), productImages.length - 1)
                     : 0;
 
+                  const isColorSelected = selectedProductColors.has(color);
+
                   return (
                     <button
                       key={color}
                       onClick={() => {
+                        toggleColor(color);
                         if (productImages.length > 1) {
                           setActiveImageIndex(imgIdx);
                         }
                       }}
-                      className={`px-2.5 py-1.5 text-[10px] tracking-wide transition-colors cursor-pointer ${
-                        activeImageIndex === imgIdx && productImages.length > 1
+                      className={`px-2.5 py-1.5 text-[10px] tracking-wide transition-colors cursor-pointer flex items-center gap-1 ${
+                        isColorSelected
                           ? "bg-black text-white"
                           : "bg-off-white hover:bg-kraft/10"
                       }`}
                     >
+                      {isColorSelected && <Check size={10} />}
                       {color}
                     </button>
                   );
                 })}
               </div>
-              <p className="text-[9px] text-smoky mt-1.5">Click a color to browse product photos</p>
+              <div className="flex items-center justify-between mt-2">
+                <p className="text-[9px] text-smoky">
+                  {selectedProductColors.size > 0
+                    ? `${selectedProductColors.size} color${selectedProductColors.size > 1 ? "s" : ""} selected`
+                    : "Click colors to select for your store"}
+                </p>
+                <button
+                  onClick={() => {
+                    const allColors = detailedColors.length > 0 ? detailedColors : product.colors || [];
+                    if (selectedProductColors.size === allColors.length) {
+                      setSelectedProductColors(new Set());
+                    } else {
+                      setSelectedProductColors(new Set(allColors));
+                    }
+                  }}
+                  className="text-[9px] text-kraft-dark hover:text-black underline"
+                >
+                  {selectedProductColors.size === (detailedColors.length || product.colors?.length || 0)
+                    ? "Deselect All"
+                    : "Select All"}
+                </button>
+              </div>
             </div>
           )}
 
