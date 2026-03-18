@@ -27,6 +27,7 @@ export default function AdminDashboard() {
   const params = useParams();
   const slug = params.slug as string;
   const [loading, setLoading] = useState(true);
+  const [storeName, setStoreName] = useState("Store");
   const [stats, setStats] = useState({
     employees: 0,
     totalCreditsLoaded: 0,
@@ -54,11 +55,12 @@ export default function AdminDashboard() {
     async function load() {
       const { data: store } = await supabase
         .from("stores")
-        .select("id")
+        .select("id, company_name")
         .eq("slug", slug)
         .single();
 
       if (!store) { setLoading(false); return; }
+      setStoreName(store.company_name || "Store");
       const storeId = store.id;
 
       const [usersRes, creditsRes, ordersRes, itemsRes, productsRes, transactionsRes] = await Promise.all([
@@ -157,7 +159,7 @@ export default function AdminDashboard() {
   return (
     <div className="min-h-screen bg-white">
       <StoreHeader
-        companyName="ACME Corporation"
+        companyName={storeName}
         logoUrl={null}
         creditBalance={0}
         cartCount={0}
@@ -372,7 +374,7 @@ export default function AdminDashboard() {
         </div>
       </div>
 
-      <StoreFooter companyName="ACME Corporation" />
+      <StoreFooter companyName={storeName} />
     </div>
   );
 }

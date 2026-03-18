@@ -42,6 +42,7 @@ export default function EmployeesPage() {
   const [showCreditModal, setShowCreditModal] = useState(false);
   const [selectedEmployee, setSelectedEmployee] = useState<Employee | null>(null);
   const [storeId, setStoreId] = useState<string | null>(null);
+  const [storeName, setStoreName] = useState("Store");
 
   // Add employee form
   const [newName, setNewName] = useState("");
@@ -60,12 +61,13 @@ export default function EmployeesPage() {
   async function loadEmployees() {
     const { data: store } = await supabase
       .from("stores")
-      .select("id")
+      .select("id, company_name")
       .eq("slug", slug)
       .single();
 
     if (!store) return;
     setStoreId(store.id);
+    setStoreName(store.company_name || "Store");
 
     const { data: users } = await supabase
       .from("users")
@@ -232,7 +234,7 @@ export default function EmployeesPage() {
   return (
     <div className="min-h-screen bg-white">
       <StoreHeader
-        companyName="ACME Corporation"
+        companyName={storeName}
         logoUrl={null}
         creditBalance={0}
         cartCount={0}
@@ -619,7 +621,7 @@ export default function EmployeesPage() {
         </div>
       )}
 
-      <StoreFooter companyName="ACME Corporation" />
+      <StoreFooter companyName={storeName} />
     </div>
   );
 }

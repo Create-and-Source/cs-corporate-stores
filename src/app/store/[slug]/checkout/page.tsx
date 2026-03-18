@@ -1,11 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { ArrowLeft, Truck, Loader2, MapPin, Package, Shield } from "lucide-react";
 import { StoreHeader } from "@/components/store/StoreHeader";
 import { StoreFooter } from "@/components/store/StoreFooter";
 import { useCart } from "@/lib/cart";
+import { supabase } from "@/lib/supabase";
 
 interface ShippingRate {
   method: string;
@@ -18,7 +19,16 @@ export default function CheckoutPage() {
   const slug = params.slug as string;
   const router = useRouter();
   const cart = useCart();
+  const [storeName, setStoreName] = useState("Store");
   const creditBalance = 15000; // TODO: pull from user session
+
+  useEffect(() => {
+    async function loadStore() {
+      const { data: store } = await supabase.from("stores").select("company_name").eq("slug", slug).single();
+      if (store) setStoreName(store.company_name || "Store");
+    }
+    loadStore();
+  }, [slug]);
 
   // Address form
   const [firstName, setFirstName] = useState("");
@@ -117,7 +127,7 @@ export default function CheckoutPage() {
     return (
       <div className="min-h-screen bg-white">
         <StoreHeader
-          companyName="ACME Corporation"
+          companyName={storeName}
           logoUrl={null}
           creditBalance={remaining}
           cartCount={0}
@@ -150,7 +160,7 @@ export default function CheckoutPage() {
             </a>
           </div>
         </div>
-        <StoreFooter companyName="ACME Corporation" />
+        <StoreFooter companyName={storeName} />
       </div>
     );
   }
@@ -158,7 +168,7 @@ export default function CheckoutPage() {
   return (
     <div className="min-h-screen bg-white">
       <StoreHeader
-        companyName="ACME Corporation"
+        companyName={storeName}
         logoUrl={null}
         creditBalance={creditBalance}
         cartCount={cart.count}
@@ -433,7 +443,7 @@ export default function CheckoutPage() {
         )}
       </div>
 
-      <StoreFooter companyName="ACME Corporation" />
+      <StoreFooter companyName={storeName} />
     </div>
   );
 }

@@ -33,11 +33,13 @@ export default function AdminOrdersPage() {
   const [statusFilter, setStatusFilter] = useState("all");
   const [search, setSearch] = useState("");
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [storeName, setStoreName] = useState("Store");
 
   useEffect(() => {
     async function load() {
-      const { data: store } = await supabase.from("stores").select("id").eq("slug", slug).single();
+      const { data: store } = await supabase.from("stores").select("id, company_name").eq("slug", slug).single();
       if (!store) { setLoading(false); return; }
+      setStoreName(store.company_name || "Store");
 
       const [ordersRes, usersRes, itemsRes] = await Promise.all([
         supabase.from("orders").select("*").eq("store_id", store.id).order("created_at", { ascending: false }),
@@ -78,7 +80,7 @@ export default function AdminOrdersPage() {
 
   return (
     <div className="min-h-screen bg-white">
-      <StoreHeader companyName="ACME Corporation" logoUrl={null} creditBalance={0} cartCount={0} isAdmin={true} storeSlug={slug} />
+      <StoreHeader companyName={storeName} logoUrl={null} creditBalance={0} cartCount={0} isAdmin={true} storeSlug={slug} />
 
       <div className="max-w-6xl mx-auto px-6 py-10">
         <div className="flex items-center justify-between mb-8">
@@ -203,7 +205,7 @@ export default function AdminOrdersPage() {
         )}
       </div>
 
-      <StoreFooter companyName="ACME Corporation" />
+      <StoreFooter companyName={storeName} />
     </div>
   );
 }

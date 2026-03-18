@@ -24,11 +24,13 @@ export default function CreditHistoryPage() {
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState("all");
   const [totals, setTotals] = useState({ loaded: 0, spent: 0, remaining: 0 });
+  const [storeName, setStoreName] = useState("Store");
 
   useEffect(() => {
     async function load() {
-      const { data: store } = await supabase.from("stores").select("id").eq("slug", slug).single();
+      const { data: store } = await supabase.from("stores").select("id, company_name").eq("slug", slug).single();
       if (!store) { setLoading(false); return; }
+      setStoreName(store.company_name || "Store");
 
       const [txRes, usersRes, creditsRes] = await Promise.all([
         supabase.from("credit_transactions").select("*").eq("store_id", store.id).order("created_at", { ascending: false }),
@@ -72,7 +74,7 @@ export default function CreditHistoryPage() {
 
   return (
     <div className="min-h-screen bg-white">
-      <StoreHeader companyName="ACME Corporation" logoUrl={null} creditBalance={0} cartCount={0} isAdmin={true} storeSlug={slug} />
+      <StoreHeader companyName={storeName} logoUrl={null} creditBalance={0} cartCount={0} isAdmin={true} storeSlug={slug} />
 
       <div className="max-w-5xl mx-auto px-6 py-10">
         <a href={`/store/${slug}/admin`} className="inline-flex items-center gap-1 text-xs text-smoky hover:text-black mb-4">
@@ -172,7 +174,7 @@ export default function CreditHistoryPage() {
         )}
       </div>
 
-      <StoreFooter companyName="ACME Corporation" />
+      <StoreFooter companyName={storeName} />
     </div>
   );
 }

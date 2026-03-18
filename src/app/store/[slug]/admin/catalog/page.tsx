@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import { useParams } from "next/navigation";
 import {
   Search,
   Plus,
@@ -19,6 +20,7 @@ import {
 import { StoreHeader } from "@/components/store/StoreHeader";
 import { StoreFooter } from "@/components/store/StoreFooter";
 import { MockupPreview } from "@/components/store/MockupPreview";
+import { supabase } from "@/lib/supabase";
 
 interface CatalogProduct {
   id: string;
@@ -36,6 +38,9 @@ interface CatalogProduct {
 }
 
 export default function CatalogPage() {
+  const params = useParams();
+  const slug = params.slug as string;
+  const [storeName, setStoreName] = useState("Store");
   const [products, setProducts] = useState<CatalogProduct[]>([]);
   const [categories, setCategories] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
@@ -67,6 +72,14 @@ export default function CatalogPage() {
     savings: number;
   }>>([]);
   const [loadingBulk, setLoadingBulk] = useState(false);
+
+  useEffect(() => {
+    async function loadStore() {
+      const { data: store } = await supabase.from("stores").select("company_name").eq("slug", slug).single();
+      if (store) setStoreName(store.company_name || "Store");
+    }
+    loadStore();
+  }, [slug]);
 
   const fetchBulkPricing = async (product: CatalogProduct, method: string = "dtf", locs: number = 1) => {
     setLoadingBulk(true);
@@ -307,12 +320,12 @@ export default function CatalogPage() {
   return (
     <div className="min-h-screen bg-white">
       <StoreHeader
-        companyName="ACME Corporation"
+        companyName={storeName}
         logoUrl={null}
         creditBalance={0}
         cartCount={0}
         isAdmin={true}
-        storeSlug="acme-corp"
+        storeSlug={slug}
       />
 
       <div className="max-w-7xl mx-auto px-6 py-10">
@@ -901,7 +914,7 @@ export default function CatalogPage() {
         </div>
       )}
 
-      <StoreFooter companyName="ACME Corporation" />
+      <StoreFooter companyName={storeName} />
     </div>
   );
 }

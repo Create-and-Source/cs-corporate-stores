@@ -42,9 +42,13 @@ export default function OrdersPage() {
   const cart = useCart();
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
+  const [storeName, setStoreName] = useState("Store");
 
   useEffect(() => {
     async function load() {
+      const { data: store } = await supabase.from("stores").select("company_name").eq("slug", slug).single();
+      if (store) setStoreName(store.company_name || "Store");
+
       const { data } = await supabase
         .from("orders")
         .select("*, order_items(*)")
@@ -54,12 +58,12 @@ export default function OrdersPage() {
       setLoading(false);
     }
     load();
-  }, []);
+  }, [slug]);
 
   return (
     <div className="min-h-screen bg-white">
       <StoreHeader
-        companyName="ACME Corporation"
+        companyName={storeName}
         logoUrl={null}
         creditBalance={15000}
         cartCount={cart.count}
@@ -187,7 +191,7 @@ export default function OrdersPage() {
         )}
       </div>
 
-      <StoreFooter companyName="ACME Corporation" />
+      <StoreFooter companyName={storeName} />
     </div>
   );
 }
