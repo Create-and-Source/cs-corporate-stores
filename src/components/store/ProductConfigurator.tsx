@@ -44,6 +44,13 @@ export function ProductConfigurator({
   const [printifyMockups, setPrintifyMockups] = useState<string[]>([]);
   const [generatingMockup, setGeneratingMockup] = useState(false);
 
+  // Reset mockups when color changes so user can regenerate
+  useEffect(() => {
+    if (printifyMockups.length > 0) {
+      setPrintifyMockups([]);
+    }
+  }, [selectedColor]);
+
   // Notify parent of changes
   useEffect(() => {
     onConfigChange(placements);
