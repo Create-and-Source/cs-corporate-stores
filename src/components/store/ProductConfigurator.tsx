@@ -138,15 +138,18 @@ export function ProductConfigurator({
         return;
       }
 
-      // Generate one mockup per configured placement (left chest, back, sleeve, etc.)
+      // Generate mockups for each color × placement combo
       const logoPlacements = placements.filter((p) => p.logoUrl);
-      const allMockupUrls: string[] = [];
+      const colorsToRender = selectedColors && selectedColors.length > 0
+        ? selectedColors
+        : selectedColor ? [selectedColor] : [undefined];
 
+      // Prepare logo URLs for each placement
+      const placementUrls: Array<{ placement: typeof logoPlacements[0]; url: string }> = [];
       for (const lp of logoPlacements) {
-        try {
-          let lpImageUrl = imageUrl;
-          // If this placement has a different logo, upload it too
-          if (lp.logoUrl && lp.logoUrl !== firstLogo.logoUrl && lp.logoUrl.startsWith("data:")) {
+        let lpImageUrl = imageUrl;
+        if (lp.logoUrl && lp.logoUrl !== firstLogo.logoUrl && lp.logoUrl.startsWith("data:")) {
+          try {
             const response = await fetch(lp.logoUrl);
             const blob = await response.blob();
             const formData = new FormData();
@@ -157,33 +160,55 @@ export function ProductConfigurator({
               const ud = await uploadRes.json();
               if (ud.url) lpImageUrl = ud.url;
             }
-          } else if (lp.logoUrl && !lp.logoUrl.startsWith("data:")) {
-            lpImageUrl = lp.logoUrl;
-          }
-
-          const res = await fetch("/api/mockup", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              blueprintId: parseInt(productBlueprintId),
-              imageUrl: lpImageUrl,
-              position: ["left_chest", "right_chest"].includes(lp.locationId) ? "front" : lp.locationId,
-              placement: lp.locationId,
-              color: selectedColor || undefined,
-            }),
-          });
-
-          if (res.ok) {
-            const data = await res.json();
-            const urls = (data.mockups || [])
-              .filter((m: { src: string }) => m.src)
-              .map((m: { src: string }) => m.src);
-            allMockupUrls.push(...urls);
-          }
-        } catch {}
+          } catch {}
+        } else if (lp.logoUrl && !lp.logoUrl.startsWith("data:")) {
+          lpImageUrl = lp.logoUrl;
+        }
+        placementUrls.push({ placement: lp, url: lpImageUrl });
       }
 
-      setPrintifyMockups(allMockupUrls);
+      // Generate all combos in parallel (batches of 4 to avoid rate limits)
+      const allMockupUrls: string[] = [];
+      const combos: Array<{ color: string | undefined; placement: typeof logoPlacements[0]; url: string }> = [];
+      for (const color of colorsToRender) {
+        for (const pu of placementUrls) {
+          combos.push({ color, placement: pu.placement, url: pu.url });
+        }
+      }
+
+      // Process in batches of 4
+      for (let i = 0; i < combos.length; i += 4) {
+        const batch = combos.slice(i, i + 4);
+        const results = await Promise.all(
+          batch.map(async ({ color, placement: lp, url: lpImageUrl }) => {
+            try {
+              const res = await fetch("/api/mockup", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                  blueprintId: parseInt(productBlueprintId),
+                  imageUrl: lpImageUrl,
+                  position: ["left_chest", "right_chest"].includes(lp.locationId) ? "front" : lp.locationId,
+                  placement: lp.locationId,
+                  color: color || undefined,
+                }),
+              });
+              if (res.ok) {
+                const data = await res.json();
+                return (data.mockups || [])
+                  .filter((m: { src: string }) => m.src)
+                  .map((m: { src: string }) => m.src);
+              }
+            } catch {}
+            return [];
+          })
+        );
+        for (const urls of results) {
+          allMockupUrls.push(...urls);
+        }
+        // Update preview as batches complete
+        setPrintifyMockups([...allMockupUrls]);
+      }
     } catch {}
     setGeneratingMockup(false);
   };
