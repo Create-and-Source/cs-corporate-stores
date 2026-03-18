@@ -10,7 +10,7 @@ const PRINTIFY_API_KEY = process.env.PRINTIFY_API_KEY || "";
 const FE_API_KEY = process.env.FULFILL_ENGINE_API_KEY || "";
 const FE_ACCOUNT_ID = process.env.FULFILL_ENGINE_ACCOUNT_ID || "";
 const FE_MARGIN = 0.30; // 30% on Fulfill Engine products
-const PRINTIFY_MARGIN = 0.15; // 15% on Printify products
+const PRINTIFY_MARGIN = 0.20; // 20% on Printify products
 
 // Printify typical production costs by category (in cents)
 const PRINTIFY_COSTS: Record<string, number> = {
