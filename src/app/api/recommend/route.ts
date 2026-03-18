@@ -87,7 +87,7 @@ Recommend the top 5 best products for their needs. Return ONLY a JSON array of t
     };
 
     for (const [intent, matches] of Object.entries(intentMap)) {
-      if (keywords.some((k) => intent.includes(k) || k.includes(intent))) {
+      if (keywords.some((k: string) => intent.includes(k) || k.includes(intent))) {
         for (const m of matches) {
           if (text.includes(m)) score += 5;
         }
@@ -97,11 +97,11 @@ Recommend the top 5 best products for their needs. Return ONLY a JSON array of t
     return { index: i + 1, score };
   });
 
-  const recommended = scored
-    .filter((s: { score: number }) => s.score > 0)
-    .sort((a: { score: number }, b: { score: number }) => b.score - a.score)
+  const recommended = (scored as Array<{ index: number; score: number }>)
+    .filter((s) => s.score > 0)
+    .sort((a, b) => b.score - a.score)
     .slice(0, 10)
-    .map((s: { index: number }) => s.index);
+    .map((s) => s.index);
 
   return NextResponse.json({ recommended, ai: false });
 }
