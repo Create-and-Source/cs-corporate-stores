@@ -102,9 +102,8 @@ export function SmartSearch({ onSearch, onCategorySelect }: SmartSearchProps) {
 
   const handleSuggestionClick = (suggestion: Suggestion) => {
     setInput(suggestion.query);
-    // Send BOTH the search text and category
     onSearch(suggestion.query);
-    onCategorySelect(suggestion.category);
+    onCategorySelect("All");
     setShowSuggestions(false);
   };
 
