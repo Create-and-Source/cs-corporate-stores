@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { readFileSync } from "fs";
-import { join } from "path";
+import FE_PRICES_DATA from "@/data/fe-prices";
 
 // Default margin — Tovah's markup on top of wholesale cost
 const DEFAULT_MARGIN = 0.30; // 30%
@@ -40,32 +39,12 @@ let priceMap: Map<string, { name: string; cost: number }> | null = null;
 function loadPrices(): Map<string, { name: string; cost: number }> {
   if (priceMap) return priceMap;
 
-  try {
-    const csvPath = join(process.cwd(), "src/data/fe-prices.csv");
-    const csv = readFileSync(csvPath, "utf-8");
-    const lines = csv.split("\n");
-    const map = new Map<string, { name: string; cost: number }>();
-
-    for (let i = 1; i < lines.length; i++) {
-      const line = lines[i].trim();
-      if (!line) continue;
-
-      // Parse CSV: "id","name",price
-      const match = line.match(/^"([^"]+)","([^"]+)",([0-9.]+)$/);
-      if (match) {
-        map.set(match[1].toLowerCase(), {
-          name: match[2],
-          cost: parseFloat(match[3]),
-        });
-      }
-    }
-
-    priceMap = map;
-    return map;
-  } catch (e) {
-    console.error("Failed to load prices:", e);
-    return new Map();
+  const map = new Map<string, { name: string; cost: number }>();
+  for (const [id, data] of Object.entries(FE_PRICES_DATA)) {
+    map.set(id, data);
   }
+  priceMap = map;
+  return map;
 }
 
 // GET /api/catalog/pricing?productId=nl6210&locations=2&method=embroidery

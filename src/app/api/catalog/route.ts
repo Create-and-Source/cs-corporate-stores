@@ -3,8 +3,8 @@ import {
   getFulfillEngineProductIds,
   getFulfillEngineProducts,
 } from "@/lib/fulfill-engine";
-import { readFileSync } from "fs";
-import { join } from "path";
+import FE_PRICES_DATA from "@/data/fe-prices";
+import IMAGE_CACHE_DATA from "@/data/product-images";
 
 const PRINTIFY_API_KEY = process.env.PRINTIFY_API_KEY || "";
 const FE_API_KEY = process.env.FULFILL_ENGINE_API_KEY || "";
@@ -52,34 +52,20 @@ interface CatalogProduct {
 let feCache: { products: CatalogProduct[]; timestamp: number } | null = null;
 let printifyCache: { products: CatalogProduct[]; timestamp: number } | null = null;
 let priceMap: Map<string, number> | null = null;
-let imageMap: Record<string, string | null> | null = null;
 const CACHE_TTL = 1000 * 60 * 60;
 
 function loadImageMap(): Record<string, string | null> {
-  if (imageMap) return imageMap;
-  try {
-    const data = readFileSync(join(process.cwd(), "src/data/product-images.json"), "utf-8");
-    imageMap = JSON.parse(data);
-    return imageMap!;
-  } catch {
-    return {};
-  }
+  return IMAGE_CACHE_DATA as Record<string, string | null>;
 }
 
 function loadPriceMap(): Map<string, number> {
   if (priceMap) return priceMap;
-  try {
-    const csv = readFileSync(join(process.cwd(), "src/data/fe-prices.csv"), "utf-8");
-    const map = new Map<string, number>();
-    for (const line of csv.split("\n").slice(1)) {
-      const match = line.trim().match(/^"([^"]+)","([^"]+)",([0-9.]+)$/);
-      if (match) map.set(match[1].toLowerCase(), parseFloat(match[3]));
-    }
-    priceMap = map;
-    return map;
-  } catch {
-    return new Map();
+  const map = new Map<string, number>();
+  for (const [id, data] of Object.entries(FE_PRICES_DATA)) {
+    map.set(id, data.cost);
   }
+  priceMap = map;
+  return map;
 }
 
 // GET /api/catalog
