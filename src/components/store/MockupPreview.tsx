@@ -6,8 +6,8 @@ import { Package } from "lucide-react";
 // Print location positions (relative to product image, 0-1 scale)
 const PLACEMENT_POSITIONS: Record<string, { x: number; y: number; w: number; h: number }> = {
   // Apparel - chest placements (positioned on the garment chest area)
-  left_chest: { x: 0.30, y: 0.32, w: 0.16, h: 0.12 },
-  right_chest: { x: 0.54, y: 0.32, w: 0.16, h: 0.12 },
+  left_chest: { x: 0.54, y: 0.32, w: 0.16, h: 0.12 },
+  right_chest: { x: 0.30, y: 0.32, w: 0.16, h: 0.12 },
   front: { x: 0.28, y: 0.28, w: 0.44, h: 0.30 },
   full_front: { x: 0.25, y: 0.25, w: 0.50, h: 0.35 },
 
