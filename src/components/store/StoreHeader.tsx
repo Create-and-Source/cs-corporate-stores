@@ -43,7 +43,7 @@ export function StoreHeader({
         {/* Navigation */}
         <nav className="hidden md:flex items-center gap-8">
           <a
-            href={`/store/${storeSlug}/products`}
+            href={`/store/${storeSlug}#products`}
             className="text-sm tracking-wide uppercase text-smoky hover:text-black transition-colors"
           >
             Shop
