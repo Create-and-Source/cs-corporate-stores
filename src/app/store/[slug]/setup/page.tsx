@@ -571,22 +571,12 @@ export default function SetupPage() {
                   </div>
                 </div>
 
-                {/* Preview on product */}
-                {data.selectedProducts.length > 0 && data.selectedProducts[0].image && (
-                  <div className="mt-6 pt-6 border-t border-kraft/20">
-                    <p className="text-xs font-medium mb-3">Preview on {data.selectedProducts[0].name}:</p>
-                    <div className="relative w-48 h-48 bg-white mx-auto">
-                      <img
-                        src={data.selectedProducts[0].image}
-                        alt={data.selectedProducts[0].name}
-                        className="w-full h-full object-contain"
-                      />
-                      <div className="absolute" style={{ top: "25%", left: "30%", width: "40%", height: "25%" }}>
-                        <img src={data.logoUrl} alt="Logo" className="max-w-full max-h-full object-contain drop-shadow-md" style={{ opacity: 0.85 }} />
-                      </div>
-                    </div>
-                  </div>
-                )}
+                <div className="mt-4 p-3 bg-success/5 border border-success/20">
+                  <p className="text-xs text-success font-medium">
+                    Logo will be applied to all {data.selectedProducts.length} selected product{data.selectedProducts.length !== 1 ? "s" : ""}.
+                    You can customize placement per product in the catalog after setup.
+                  </p>
+                </div>
               </div>
             ) : (
               <label className="border-2 border-dashed border-gray-200 hover:border-kraft p-12 flex flex-col items-center justify-center cursor-pointer transition-colors">

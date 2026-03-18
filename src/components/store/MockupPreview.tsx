@@ -5,32 +5,34 @@ import { Package } from "lucide-react";
 
 // Print location positions (relative to product image, 0-1 scale)
 const PLACEMENT_POSITIONS: Record<string, { x: number; y: number; w: number; h: number }> = {
-  // Apparel - front
-  left_chest: { x: 0.28, y: 0.28, w: 0.18, h: 0.14 },
-  right_chest: { x: 0.54, y: 0.28, w: 0.18, h: 0.14 },
-  front: { x: 0.25, y: 0.22, w: 0.50, h: 0.35 },
-  full_front: { x: 0.20, y: 0.20, w: 0.60, h: 0.40 },
+  // Apparel - chest placements (positioned on the garment chest area)
+  left_chest: { x: 0.30, y: 0.32, w: 0.16, h: 0.12 },
+  right_chest: { x: 0.54, y: 0.32, w: 0.16, h: 0.12 },
+  front: { x: 0.28, y: 0.28, w: 0.44, h: 0.30 },
+  full_front: { x: 0.25, y: 0.25, w: 0.50, h: 0.35 },
 
   // Apparel - back
-  back: { x: 0.22, y: 0.22, w: 0.56, h: 0.38 },
-  upper_back: { x: 0.25, y: 0.18, w: 0.50, h: 0.15 },
+  back: { x: 0.28, y: 0.28, w: 0.44, h: 0.30 },
+  upper_back: { x: 0.30, y: 0.22, w: 0.40, h: 0.12 },
 
   // Sleeves
-  left_sleeve_short: { x: 0.08, y: 0.28, w: 0.14, h: 0.12 },
-  right_sleeve_short: { x: 0.78, y: 0.28, w: 0.14, h: 0.12 },
-  left_sleeve_long: { x: 0.05, y: 0.35, w: 0.12, h: 0.15 },
-  right_sleeve_long: { x: 0.83, y: 0.35, w: 0.12, h: 0.15 },
+  left_sleeve_short: { x: 0.12, y: 0.32, w: 0.12, h: 0.10 },
+  right_sleeve_short: { x: 0.76, y: 0.32, w: 0.12, h: 0.10 },
+  left_sleeve_long: { x: 0.10, y: 0.40, w: 0.10, h: 0.12 },
+  right_sleeve_long: { x: 0.80, y: 0.40, w: 0.10, h: 0.12 },
+  left_sleeve: { x: 0.12, y: 0.32, w: 0.12, h: 0.10 },
+  right_sleeve: { x: 0.76, y: 0.32, w: 0.12, h: 0.10 },
 
   // Headwear
-  front_center: { x: 0.30, y: 0.25, w: 0.40, h: 0.30 },
-  front_cuff: { x: 0.25, y: 0.40, w: 0.50, h: 0.20 },
+  front_center: { x: 0.30, y: 0.30, w: 0.40, h: 0.25 },
+  front_cuff: { x: 0.28, y: 0.42, w: 0.44, h: 0.16 },
 
   // Drinkware
-  laser_engrave: { x: 0.25, y: 0.30, w: 0.50, h: 0.35 },
-  wrap: { x: 0.20, y: 0.25, w: 0.60, h: 0.45 },
+  laser_engrave: { x: 0.28, y: 0.32, w: 0.44, h: 0.30 },
+  wrap: { x: 0.22, y: 0.28, w: 0.56, h: 0.40 },
 
   // Default center
-  center: { x: 0.25, y: 0.25, w: 0.50, h: 0.30 },
+  center: { x: 0.30, y: 0.30, w: 0.40, h: 0.28 },
 };
 
 interface MockupPreviewProps {
@@ -141,15 +143,23 @@ export function MockupPreview({
         const drawX = lx + (lw - drawW) / 2;
         const drawY = ly + (lh - drawH) / 2;
 
-        // Slight transparency for realism
-        ctx.globalAlpha = 0.88;
+        // Draw logo with multiply blend for realism on fabric
+        ctx.save();
+        ctx.globalAlpha = 0.92;
+        ctx.globalCompositeOperation = "multiply";
         ctx.drawImage(logoImg, drawX, drawY, drawW, drawH);
-        ctx.globalAlpha = 1;
+        ctx.restore();
+
+        // Draw again on top with slight opacity for vibrancy
+        ctx.save();
+        ctx.globalAlpha = 0.5;
+        ctx.drawImage(logoImg, drawX, drawY, drawW, drawH);
+        ctx.restore();
 
         // Subtle shadow under logo
         ctx.save();
-        ctx.globalAlpha = 0.05;
-        ctx.filter = "blur(3px)";
+        ctx.globalAlpha = 0.04;
+        ctx.filter = "blur(4px)";
         ctx.drawImage(logoImg, drawX + 2, drawY + 2, drawW, drawH);
         ctx.restore();
       } catch {
