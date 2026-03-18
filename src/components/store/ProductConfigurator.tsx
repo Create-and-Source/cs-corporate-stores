@@ -91,8 +91,38 @@ export function ProductConfigurator({
     setGeneratingMockup(true);
     try {
       let imageUrl = firstLogo.logoUrl!;
+
+      // Upload data URL to Supabase Storage to get a public URL
       if (imageUrl.startsWith("data:")) {
-        imageUrl = "https://upload.wikimedia.org/wikipedia/commons/thumb/2/2f/Google_2015_logo.svg/1200px-Google_2015_logo.svg.png";
+        try {
+          // Convert data URL to blob
+          const response = await fetch(imageUrl);
+          const blob = await response.blob();
+          const formData = new FormData();
+          formData.append("file", blob, "logo.png");
+          formData.append("storeId", storeSlug);
+
+          const uploadRes = await fetch("/api/upload", {
+            method: "POST",
+            body: formData,
+          });
+
+          if (uploadRes.ok) {
+            const uploadData = await uploadRes.json();
+            if (uploadData.url) {
+              imageUrl = uploadData.url;
+            }
+          }
+        } catch {
+          // If upload fails, can't generate mockup with real logo
+        }
+      }
+
+      // If still a data URL, we can't send to Printify
+      if (imageUrl.startsWith("data:")) {
+        setGeneratingMockup(false);
+        alert("Please try uploading your logo again. The file needs to be accessible online for mockup generation.");
+        return;
       }
 
       const res = await fetch("/api/mockup", {
