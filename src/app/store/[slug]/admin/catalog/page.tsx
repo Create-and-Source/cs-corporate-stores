@@ -62,6 +62,15 @@ export default function CatalogPage() {
 
   const generateMockup = async () => {
     if (!selectedProduct || !artworkUrl || selectedProduct.provider !== "printify") return;
+
+    // Data URLs (local uploads) can't be fetched by Printify
+    // Use a placeholder logo for demo, or need real upload first
+    let imageToUse = artworkUrl;
+    if (artworkUrl.startsWith("data:")) {
+      // Use a sample logo for demo mockups
+      imageToUse = "https://upload.wikimedia.org/wikipedia/commons/thumb/2/2f/Google_2015_logo.svg/1200px-Google_2015_logo.svg.png";
+    }
+
     setGeneratingMockup(true);
     setMockupImages([]);
 
@@ -71,7 +80,7 @@ export default function CatalogPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           blueprintId: parseInt(selectedProduct.providerId),
-          imageUrl: artworkUrl,
+          imageUrl: imageToUse,
           position: "front",
         }),
       });
@@ -79,12 +88,15 @@ export default function CatalogPage() {
       if (res.ok) {
         const data = await res.json();
         if (data.mockups && data.mockups.length > 0) {
-          // Mockup images from Printify
           const urls = data.mockups
-            .filter((m: { src: string }) => m.src)
+            .filter((m: { src: string; position: string }) => m.src && m.position === "front")
+            .slice(0, 4)
             .map((m: { src: string }) => m.src);
-          setMockupImages(urls);
+          setMockupImages(urls.length > 0 ? urls : data.mockups.filter((m: { src: string }) => m.src).slice(0, 4).map((m: { src: string }) => m.src));
         }
+      } else {
+        const err = await res.json();
+        console.error("Mockup error:", err);
       }
     } catch (e) {
       console.error("Mockup generation failed:", e);
