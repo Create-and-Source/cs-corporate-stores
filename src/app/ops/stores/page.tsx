@@ -134,7 +134,7 @@ export default function OpsStoresPage() {
               <p className="text-[10px] text-smoky mt-4 pt-3 border-t border-gray-50">
                 Created {new Date(store.created_at).toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })}
               </p>
-            </div>
+            </a>
           ))}
         </div>
       )}

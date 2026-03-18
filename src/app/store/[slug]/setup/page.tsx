@@ -20,6 +20,9 @@ import {
   ArrowRight,
   X,
   HelpCircle,
+  MapPin,
+  DollarSign,
+  Layers,
 } from "lucide-react";
 import { StoreFooter } from "@/components/store/StoreFooter";
 import { SmartSearch } from "@/components/store/SmartSearch";
@@ -56,6 +59,9 @@ interface CatalogProduct {
   category: string;
   clientPrice: number | null;
   hasImage: boolean;
+  provider: string;
+  providerId: string;
+  colors?: string[];
 }
 
 export default function SetupPage() {
@@ -416,8 +422,8 @@ export default function SetupPage() {
             {/* Smart Search */}
             <div className="mb-4">
               <SmartSearch
-                onSearch={(q) => { setSearchInput(q); setCatalogPage(1); }}
-                onCategorySelect={(cat) => { setActiveCategory(cat); setCatalogPage(1); }}
+                onSearch={(q) => { setSearchInput(q); setActiveCategory("All"); setCatalogPage(1); }}
+                onCategorySelect={(cat) => { setSearchInput(""); setActiveCategory(cat); setCatalogPage(1); }}
               />
             </div>
 
@@ -740,74 +746,259 @@ export default function SetupPage() {
         </div>
       )}
 
-      {/* Product Detail Modal */}
+      {/* Product Detail Modal — Full Info */}
       {previewProduct && (
-        <div
-          className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4"
-          onClick={(e) => { if (e.target === e.currentTarget) setPreviewProduct(null); }}
-        >
-          <div className="bg-white max-w-lg w-full max-h-[80vh] overflow-y-auto">
-            <div className="flex items-center justify-between p-5 border-b border-gray-100">
-              <h3 className="font-bold">{previewProduct.name}</h3>
-              <button onClick={() => setPreviewProduct(null)}>
-                <X size={18} />
-              </button>
-            </div>
-
-            <div className="p-5">
-              {/* Image */}
-              <div className="aspect-square bg-off-white mb-4 flex items-center justify-center overflow-hidden">
-                {previewProduct.image ? (
-                  <img
-                    src={previewProduct.image}
-                    alt={previewProduct.name}
-                    className="w-full h-full object-contain p-4"
-                  />
-                ) : (
-                  <div className="text-center">
-                    <Package size={48} className="mx-auto text-kraft mb-2" />
-                    <p className="text-xs text-smoky">{previewProduct.category}</p>
-                  </div>
-                )}
-              </div>
-
-              <p className="text-[10px] tracking-[0.15em] uppercase text-kraft-dark mb-1">
-                {previewProduct.category}
-              </p>
-              <h2 className="text-xl font-bold mb-3">{previewProduct.name}</h2>
-
-              {previewProduct.clientPrice && (
-                <p className="text-2xl font-bold mb-4">
-                  ${(previewProduct.clientPrice / 100).toFixed(2)}
-                  <span className="text-sm text-smoky ml-2 font-normal">per item</span>
-                </p>
-              )}
-
-              <button
-                onClick={() => {
-                  toggleProduct(previewProduct);
-                  setPreviewProduct(null);
-                }}
-                className={`w-full py-3 text-sm tracking-[0.12em] uppercase font-medium flex items-center justify-center gap-2 transition-all ${
-                  data.selectedProducts.some((p) => p.id === previewProduct.id)
-                    ? "bg-error/10 text-error border border-error/20"
-                    : "bg-black text-white hover:bg-brown"
-                }`}
-              >
-                {data.selectedProducts.some((p) => p.id === previewProduct.id) ? (
-                  <><X size={16} /> Remove from Store</>
-                ) : (
-                  <><Plus size={16} /> Add to Store</>
-                )}
-              </button>
-            </div>
-          </div>
-        </div>
+        <ProductDetailModal
+          product={previewProduct}
+          isSelected={data.selectedProducts.some((p) => p.id === previewProduct.id)}
+          onClose={() => setPreviewProduct(null)}
+          onToggle={() => {
+            toggleProduct(previewProduct);
+            setPreviewProduct(null);
+          }}
+        />
       )}
 
       <StoreFooter companyName={data.companyName || "Create & Source"} />
     </div>
   );
+}
+
+// Comprehensive product detail modal for the setup wizard
+function ProductDetailModal({ product, isSelected, onClose, onToggle }: {
+  product: CatalogProduct;
+  isSelected: boolean;
+  onClose: () => void;
+  onToggle: () => void;
+}) {
+  const [bulkTiers, setBulkTiers] = useState<Array<{ label: string; clientPriceFormatted: string; savings: number }>>([]);
+  const [loadingTiers, setLoadingTiers] = useState(true);
+
+  // Fetch bulk pricing on mount
+  useEffect(() => {
+    async function fetchPricing() {
+      try {
+        const params = new URLSearchParams({
+          productId: product.providerId,
+          provider: product.provider,
+          category: product.category,
+        });
+        const res = await fetch(`/api/catalog/bulk-pricing?${params}`);
+        if (res.ok) {
+          const data = await res.json();
+          setBulkTiers(data.tiers || []);
+        }
+      } catch {}
+      setLoadingTiers(false);
+    }
+    fetchPricing();
+  }, [product]);
+
+  // Default locations by category
+  const locations = getDefaultLocations(product.category);
+
+  // Decoration methods by category
+  const getDecorationMethods = (cat: string) => {
+    const c = cat.toLowerCase();
+    if (c.includes("shirt") || c.includes("tee") || c.includes("hoodie") || c.includes("sweat") || c.includes("polo") || c.includes("top"))
+      return ["DTG Print", "DTF Print", "Embroidery", "Screen Print", "Heat Transfer"];
+    if (c.includes("hat") || c.includes("cap") || c.includes("headwear") || c.includes("beanie"))
+      return ["Embroidery", "Heat Transfer", "DTF Print"];
+    if (c.includes("mug") || c.includes("drink") || c.includes("bottle") || c.includes("tumbler"))
+      return ["Laser Engrave", "UV Print", "Dye Sublimation"];
+    if (c.includes("bag") || c.includes("tote") || c.includes("backpack"))
+      return ["Screen Print", "DTF Print", "Embroidery"];
+    if (c.includes("jacket") || c.includes("vest") || c.includes("outerwear") || c.includes("quarter"))
+      return ["Embroidery", "Heat Transfer", "DTF Print"];
+    return ["DTF Print", "Embroidery", "Screen Print"];
+  };
+
+  return (
+    <div
+      className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4"
+      onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
+    >
+      <div className="bg-white max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+        {/* Header */}
+        <div className="flex items-center justify-between p-5 border-b border-gray-100 sticky top-0 bg-white z-10">
+          <div>
+            <h3 className="font-bold text-lg">{product.name}</h3>
+            <p className="text-[10px] tracking-[0.15em] uppercase text-kraft-dark">{product.category}</p>
+          </div>
+          <button onClick={onClose} className="p-2 hover:bg-off-white">
+            <X size={18} />
+          </button>
+        </div>
+
+        <div className="p-6 space-y-6">
+          {/* Image + Description */}
+          <div className="flex gap-6">
+            <div className="w-48 h-48 bg-off-white flex items-center justify-center overflow-hidden flex-shrink-0">
+              {product.image ? (
+                <img src={product.image} alt={product.name} className="w-full h-full object-contain p-3" />
+              ) : (
+                <Package size={40} className="text-kraft" />
+              )}
+            </div>
+            <div className="flex-1">
+              {product.clientPrice && (
+                <p className="text-3xl font-bold mb-2">
+                  ${(product.clientPrice / 100).toFixed(2)}
+                  <span className="text-sm text-smoky ml-2 font-normal">per item</span>
+                </p>
+              )}
+              <p className="text-xs text-smoky leading-relaxed">
+                Premium quality product ready for custom decoration with your company logo.
+                Available in multiple colors and sizes.
+              </p>
+            </div>
+          </div>
+
+          {/* Available Colors */}
+          {product.colors && product.colors.length > 0 && (
+            <div>
+              <p className="text-xs font-semibold mb-2 flex items-center gap-2">
+                <Palette size={14} className="text-kraft-dark" />
+                Available Colors ({product.colors.length})
+              </p>
+              <div className="flex flex-wrap gap-1.5">
+                {product.colors.map((color) => (
+                  <span key={color} className="px-2.5 py-1 bg-off-white text-[10px] tracking-wide">
+                    {color}
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Decoration Locations */}
+          <div>
+            <p className="text-xs font-semibold mb-2 flex items-center gap-2">
+              <MapPin size={14} className="text-kraft-dark" />
+              Logo Placement Options
+            </p>
+            <div className="flex flex-wrap gap-1.5">
+              {locations.map((loc) => (
+                <span key={loc.id} className="px-3 py-1.5 bg-off-white text-[10px] tracking-wide">
+                  {loc.label}
+                </span>
+              ))}
+            </div>
+          </div>
+
+          {/* Decoration Methods */}
+          <div>
+            <p className="text-xs font-semibold mb-2 flex items-center gap-2">
+              <Layers size={14} className="text-kraft-dark" />
+              Decoration Methods
+            </p>
+            <div className="flex flex-wrap gap-1.5">
+              {getDecorationMethods(product.category).map((method) => (
+                <span key={method} className="px-3 py-1.5 bg-off-white text-[10px] tracking-wide">
+                  {method}
+                </span>
+              ))}
+            </div>
+          </div>
+
+          {/* Volume Pricing */}
+          <div>
+            <p className="text-xs font-semibold mb-2 flex items-center gap-2">
+              <DollarSign size={14} className="text-kraft-dark" />
+              Volume Pricing — Order More, Save More
+            </p>
+            {loadingTiers ? (
+              <div className="bg-off-white p-4 text-center">
+                <Loader2 size={16} className="animate-spin text-kraft mx-auto" />
+              </div>
+            ) : bulkTiers.length > 0 ? (
+              <div className="border border-kraft/20">
+                <table className="w-full">
+                  <thead>
+                    <tr className="bg-off-white border-b border-kraft/20">
+                      <th className="text-left px-3 py-2 text-[9px] tracking-wider uppercase text-smoky">Quantity</th>
+                      <th className="text-right px-3 py-2 text-[9px] tracking-wider uppercase text-smoky">Price Each</th>
+                      <th className="text-right px-3 py-2 text-[9px] tracking-wider uppercase text-smoky">Savings</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {bulkTiers.slice(0, 6).map((tier, i) => (
+                      <tr key={i} className="border-b border-gray-100">
+                        <td className="px-3 py-2 text-xs font-medium">{tier.label}</td>
+                        <td className="px-3 py-2 text-xs font-bold text-right">{tier.clientPriceFormatted}</td>
+                        <td className="px-3 py-2 text-right">
+                          {tier.savings > 0 ? (
+                            <span className="text-[10px] text-success font-medium">Save {tier.savings}%</span>
+                          ) : (
+                            <span className="text-[10px] text-smoky">—</span>
+                          )}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            ) : product.clientPrice ? (
+              <div className="bg-off-white p-4">
+                <div className="grid grid-cols-4 gap-3 text-center">
+                  {[10, 25, 50, 100].map((qty) => (
+                    <div key={qty}>
+                      <p className="text-lg font-bold">${((product.clientPrice! / 100) * qty).toFixed(0)}</p>
+                      <p className="text-[9px] text-smoky uppercase">{qty} items</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ) : null}
+          </div>
+
+          {/* Suggested Credit Price */}
+          {product.clientPrice && (
+            <div className="bg-kraft/10 border border-kraft/20 p-4">
+              <p className="text-xs font-semibold mb-1">Suggested Employee Credit Price</p>
+              <p className="text-2xl font-bold">${(product.clientPrice / 100).toFixed(2)}</p>
+              <p className="text-[10px] text-smoky mt-1">
+                This is what each employee would &ldquo;spend&rdquo; in credits to get this item.
+                Price includes product + decoration.
+              </p>
+            </div>
+          )}
+
+          {/* Add/Remove Button */}
+          <button
+            onClick={onToggle}
+            className={`w-full py-4 text-sm tracking-[0.15em] uppercase font-medium flex items-center justify-center gap-2 transition-all ${
+              isSelected
+                ? "bg-error/10 text-error border border-error/20 hover:bg-error/20"
+                : "bg-black text-white hover:bg-brown"
+            }`}
+          >
+            {isSelected ? (
+              <><X size={16} /> Remove from Store</>
+            ) : (
+              <><Plus size={16} /> Add to Store{product.clientPrice ? ` — ${(product.clientPrice / 100).toFixed(2)}/item` : ""}</>
+            )}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// Default locations helper
+function getDefaultLocations(category: string): Array<{ id: string; label: string }> {
+  const cat = category.toLowerCase();
+  if (cat.includes("shirt") || cat.includes("tee") || cat.includes("top") || cat.includes("polo"))
+    return [{ id: "left_chest", label: "Left Chest" }, { id: "right_chest", label: "Right Chest" }, { id: "front", label: "Full Front" }, { id: "back", label: "Full Back" }, { id: "left_sleeve", label: "Left Sleeve" }, { id: "right_sleeve", label: "Right Sleeve" }];
+  if (cat.includes("hoodie") || cat.includes("sweat") || cat.includes("quarter") || cat.includes("outerwear") || cat.includes("jacket") || cat.includes("vest"))
+    return [{ id: "left_chest", label: "Left Chest" }, { id: "front", label: "Full Front" }, { id: "back", label: "Full Back" }, { id: "left_sleeve", label: "Left Sleeve" }];
+  if (cat.includes("hat") || cat.includes("cap") || cat.includes("headwear") || cat.includes("beanie"))
+    return [{ id: "front", label: "Front Center" }, { id: "back", label: "Back" }];
+  if (cat.includes("mug") || cat.includes("drink") || cat.includes("bottle") || cat.includes("tumbler"))
+    return [{ id: "wrap", label: "Wrap Around" }, { id: "front", label: "Front" }, { id: "laser_engrave", label: "Laser Engrave" }];
+  if (cat.includes("bag") || cat.includes("tote") || cat.includes("backpack"))
+    return [{ id: "front", label: "Front" }, { id: "back", label: "Back" }];
+  return [{ id: "front", label: "Front" }, { id: "back", label: "Back" }, { id: "left_chest", label: "Left Chest" }];
 }
 
 function Tooltip({ text }: { text: string }) {
