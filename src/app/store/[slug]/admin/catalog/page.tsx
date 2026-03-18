@@ -57,6 +57,40 @@ export default function CatalogPage() {
     clientPrice: number;
     clientPriceFormatted: string;
   } | null>(null);
+  const [mockupImages, setMockupImages] = useState<string[]>([]);
+  const [generatingMockup, setGeneratingMockup] = useState(false);
+
+  const generateMockup = async () => {
+    if (!selectedProduct || !artworkUrl || selectedProduct.provider !== "printify") return;
+    setGeneratingMockup(true);
+    setMockupImages([]);
+
+    try {
+      const res = await fetch("/api/mockup", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          blueprintId: parseInt(selectedProduct.providerId),
+          imageUrl: artworkUrl,
+          position: "front",
+        }),
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        if (data.mockups && data.mockups.length > 0) {
+          // Mockup images from Printify
+          const urls = data.mockups
+            .filter((m: { src: string }) => m.src)
+            .map((m: { src: string }) => m.src);
+          setMockupImages(urls);
+        }
+      }
+    } catch (e) {
+      console.error("Mockup generation failed:", e);
+    }
+    setGeneratingMockup(false);
+  };
   const [loadingPrice, setLoadingPrice] = useState(false);
 
   // Fetch pricing when product selected or locations change
@@ -339,6 +373,7 @@ export default function CatalogPage() {
                         setArtworkName("");
                         setSelectedLocations(new Set());
                         setSelectedColors(new Set());
+                        setMockupImages([]);
                         // Auto-set pricing
                         if (product.clientPrice) {
                           setPricing({ clientPrice: product.clientPrice, clientPriceFormatted: `$${(product.clientPrice / 100).toFixed(2)}` });
@@ -584,6 +619,56 @@ export default function CatalogPage() {
                   </label>
                 )}
               </div>
+
+              {/* Mockup Preview */}
+              {artworkUrl && selectedProduct.provider === "printify" && (
+                <div className="border-t border-gray-100 pt-6">
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="flex items-center gap-2">
+                      <span className="w-6 h-6 bg-kraft text-black text-xs font-bold flex items-center justify-center">
+                        {"\u2728"}
+                      </span>
+                      <p className="text-sm font-semibold">Preview Your Product</p>
+                    </div>
+                    {!generatingMockup && mockupImages.length === 0 && (
+                      <button
+                        onClick={generateMockup}
+                        className="bg-black text-white px-4 py-2 text-xs tracking-[0.1em] uppercase font-medium hover:bg-brown transition-colors"
+                      >
+                        Generate Mockup
+                      </button>
+                    )}
+                  </div>
+
+                  {generatingMockup && (
+                    <div className="bg-off-white p-8 flex flex-col items-center justify-center">
+                      <Loader2 size={32} className="text-kraft animate-spin mb-3" />
+                      <p className="text-sm font-medium">Generating your mockup...</p>
+                      <p className="text-[10px] text-smoky mt-1">This may take 10-15 seconds</p>
+                    </div>
+                  )}
+
+                  {mockupImages.length > 0 && (
+                    <div className="grid grid-cols-2 gap-3">
+                      {mockupImages.slice(0, 4).map((url, i) => (
+                        <div key={i} className="bg-off-white overflow-hidden border border-gray-100">
+                          <img
+                            src={url}
+                            alt={`Mockup ${i + 1}`}
+                            className="w-full h-auto"
+                          />
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  {!generatingMockup && mockupImages.length === 0 && (
+                    <p className="text-xs text-smoky">
+                      Click &quot;Generate Mockup&quot; to see your logo on this product
+                    </p>
+                  )}
+                </div>
+              )}
 
               {/* Step 3: Logo Placement */}
               {selectedProduct.printLocations && selectedProduct.printLocations.length > 0 && (
