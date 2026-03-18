@@ -184,33 +184,50 @@ async function fetchColorImages(
           price: 100,
           is_enabled: true,
         })),
-        print_areas: [],
+        print_areas: [
+          {
+            variant_ids: selectedVariants.map((v) => v.id),
+            placeholders: [],
+          },
+        ],
       }),
     }
   );
 
-  if (!productRes.ok) return {};
+  if (!productRes.ok) {
+    // Try again without print_areas — some blueprints don't require them
+    const retryRes = await fetch(
+      `https://api.printify.com/v1/shops/${PRINTIFY_SHOP_ID}/products.json`,
+      {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${PRINTIFY_API_KEY}`,
+          "Content-Type": "application/json",
+          "User-Agent": "CreateAndSource/1.0",
+        },
+        body: JSON.stringify({
+          title: "Color Preview Temp",
+          description: "Temporary product for color images",
+          blueprint_id: blueprintId,
+          print_provider_id: providerId,
+          variants: selectedVariants.map((v) => ({
+            id: v.id,
+            price: 100,
+            is_enabled: true,
+          })),
+        }),
+      }
+    );
+    if (!retryRes.ok) {
+      console.error("Printify color image product creation failed:", await retryRes.text());
+      return {};
+    }
+    const retryProduct = await retryRes.json();
+    return extractColorImages(retryProduct, selectedVariants);
+  }
 
   const product = await productRes.json();
-  const images: Array<{ src: string; variant_ids: number[]; is_default: boolean }> = product.images || [];
-
-  // Map variant IDs back to color names
-  const variantIdToColor = new Map<number, string>();
-  for (const sv of selectedVariants) {
-    variantIdToColor.set(sv.id, sv.color);
-  }
-
-  // Build color → image URL map
-  const colorImageMap: Record<string, string> = {};
-  for (const img of images) {
-    if (!img.src || !img.variant_ids?.length) continue;
-    for (const vid of img.variant_ids) {
-      const color = variantIdToColor.get(vid);
-      if (color && !colorImageMap[color]) {
-        colorImageMap[color] = img.src;
-      }
-    }
-  }
+  const colorImageMap = extractColorImages(product, selectedVariants);
 
   // Clean up temp product
   fetch(
@@ -223,6 +240,31 @@ async function fetchColorImages(
       },
     }
   ).catch(() => {});
+
+  return colorImageMap;
+}
+
+function extractColorImages(
+  product: { images?: Array<{ src: string; variant_ids: number[] }> },
+  selectedVariants: Array<{ id: number; color: string }>
+): Record<string, string> {
+  const images = product.images || [];
+
+  const variantIdToColor = new Map<number, string>();
+  for (const sv of selectedVariants) {
+    variantIdToColor.set(sv.id, sv.color);
+  }
+
+  const colorImageMap: Record<string, string> = {};
+  for (const img of images) {
+    if (!img.src || !img.variant_ids?.length) continue;
+    for (const vid of img.variant_ids) {
+      const color = variantIdToColor.get(vid);
+      if (color && !colorImageMap[color]) {
+        colorImageMap[color] = img.src;
+      }
+    }
+  }
 
   return colorImageMap;
 }
