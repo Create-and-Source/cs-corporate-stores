@@ -6,18 +6,33 @@ import { join } from "path";
 const DEFAULT_MARGIN = 0.30; // 30%
 
 // Decoration cost estimates (per item, based on method + locations)
+// Actual FE decoration costs per location (from FE Price Sheet)
 const DECORATION_COSTS: Record<string, number> = {
-  embroidery: 5.00,
-  screen_printing: 3.50,
-  dtg: 4.00,
-  dtf: 4.50,
-  heat_seal_patch: 3.00,
-  laser_engrave: 4.00,
-  sticker: 1.50,
-  transfer_label: 2.00,
+  dtg: 6.50,
+  dtf: 6.50,
+  uv_dtf: 7.00,
+  uv: 7.00,
+  embroidery: 8.00, // Base: 6000 stitches, 1-5 qty. Drops to $4.70 at 48+ qty
+  screen_printing: 3.72, // 1 color, 24-47 qty. Min 24 units. Drops to $1.18 at 500+
+  heat_seal_patch: 5.00,
+  laser_engrave: 8.00,
+  engraving: 8.00,
+  sticker: 3.00,
+  transfer_label: 3.00,
+  dye_sublimation: 7.00,
+  liquid_3d: 8.75,
 };
 
-const EXTRA_LOCATION_COST = 2.50; // Each additional print location
+// Size surcharges
+const SIZE_SURCHARGES: Record<string, number> = {
+  "2XL": 2.50,
+  "3XL": 3.50,
+  "4XL": 4.50,
+  "5XL": 5.50,
+  "6XL": 6.50,
+};
+
+const EXTRA_LOCATION_COST = 6.50; // Each additional location is another decoration charge
 
 // Cache the price map
 let priceMap: Map<string, { name: string; cost: number }> | null = null;
