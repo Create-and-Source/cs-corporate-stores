@@ -31,6 +31,7 @@ interface CatalogProduct {
   printMethods?: string[];
   brand?: string;
   colors?: string[];
+  clientPrice?: number | null;
 }
 
 export default function CatalogPage() {
@@ -338,10 +339,15 @@ export default function CatalogPage() {
                         setArtworkName("");
                         setSelectedLocations(new Set());
                         setSelectedColors(new Set());
-                        setPricing(null);
-                        // Auto-fetch pricing for FE products
-                        if (product.provider === "fulfill_engine") {
+                        // Auto-set pricing
+                        if (product.clientPrice) {
+                          setPricing({ clientPrice: product.clientPrice, clientPriceFormatted: `$${(product.clientPrice / 100).toFixed(2)}` });
+                          setCustomPrice((product.clientPrice / 100).toFixed(2));
+                        } else if (product.provider === "fulfill_engine") {
+                          setPricing(null);
                           fetchPricing(product.providerId, 1, "dtf");
+                        } else {
+                          setPricing(null);
                         }
                       }
                     }}

@@ -9,7 +9,28 @@ import { join } from "path";
 const PRINTIFY_API_KEY = process.env.PRINTIFY_API_KEY || "";
 const FE_API_KEY = process.env.FULFILL_ENGINE_API_KEY || "";
 const FE_ACCOUNT_ID = process.env.FULFILL_ENGINE_ACCOUNT_ID || "";
-const DEFAULT_MARGIN = 0.30;
+const FE_MARGIN = 0.30; // 30% on Fulfill Engine products
+const PRINTIFY_MARGIN = 0.15; // 15% on Printify products
+
+// Printify typical production costs by category (in cents)
+const PRINTIFY_COSTS: Record<string, number> = {
+  "T-Shirts & Tops": 1295,
+  "Hoodies & Sweats": 2495,
+  "Outerwear": 3295,
+  "Headwear": 1495,
+  "Drinkware": 895,
+  "Bags": 1295,
+  "Wall Art": 1195,
+  "Tech": 1495,
+  "Accessories": 695,
+  "Office": 995,
+  "Bottoms & Activewear": 2195,
+  "Home & Living": 2495,
+  "Kids & Baby": 1195,
+  "Footwear": 1895,
+  "Polos": 1895,
+  "Other": 1495,
+};
 
 interface CatalogProduct {
   id: string;
@@ -93,15 +114,18 @@ export async function GET(req: NextRequest) {
           const blueprints = await res.json();
           const pProducts: CatalogProduct[] = [];
           for (const b of blueprints) {
+            const category = mapPrintifyCategory(b.title || "");
+            const baseCost = PRINTIFY_COSTS[category] || 1495;
+            const clientPrice = Math.round(baseCost * (1 + PRINTIFY_MARGIN));
             pProducts.push({
               id: `pf-${b.id}`,
               name: b.title || "Untitled",
               description: stripHtml(b.description || "").slice(0, 200),
               image: b.images?.[0] || null,
-              category: mapPrintifyCategory(b.title || ""),
+              category,
               provider: "printify",
               providerId: String(b.id),
-              clientPrice: null, // Set by client or calculated
+              clientPrice,
               hasImage: !!(b.images && b.images.length > 0),
             });
           }
@@ -160,7 +184,7 @@ export async function GET(req: NextRequest) {
           if (wholesaleCost) {
             const decorationCost = 4.50; // Default DTF
             const total = wholesaleCost + decorationCost;
-            clientPrice = Math.round(total * (1 + DEFAULT_MARGIN) * 100);
+            clientPrice = Math.round(total * (1 + FE_MARGIN) * 100);
           }
 
           feProducts.push({
