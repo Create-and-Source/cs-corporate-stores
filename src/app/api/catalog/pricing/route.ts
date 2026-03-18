@@ -22,15 +22,6 @@ const DECORATION_COSTS: Record<string, number> = {
   liquid_3d: 8.75,
 };
 
-// Size surcharges
-const SIZE_SURCHARGES: Record<string, number> = {
-  "2XL": 2.50,
-  "3XL": 3.50,
-  "4XL": 4.50,
-  "5XL": 5.50,
-  "6XL": 6.50,
-};
-
 const EXTRA_LOCATION_COST = 6.50; // Each additional location is another decoration charge
 
 // Cache the price map

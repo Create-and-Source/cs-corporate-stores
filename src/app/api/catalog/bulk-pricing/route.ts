@@ -2,8 +2,6 @@ import { NextRequest, NextResponse } from "next/server";
 import { calculateBulkPricing } from "@/lib/pricing";
 import FE_PRICES_DATA from "@/data/fe-prices";
 
-const PRINTIFY_API_KEY = process.env.PRINTIFY_API_KEY || "";
-
 // Market-rate client prices by category (in dollars)
 const PRINTIFY_MARKET_PRICES: Record<string, number> = {
   "T-Shirts & Tops": 22.00,

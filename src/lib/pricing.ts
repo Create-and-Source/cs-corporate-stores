@@ -46,15 +46,6 @@ const FLAT_DECORATION_COSTS: Record<string, number> = {
   transfer_label: 3.00,
 };
 
-// Size surcharges
-const SIZE_SURCHARGES: Record<string, number> = {
-  "2XL": 2.50,
-  "3XL": 3.50,
-  "4XL": 4.50,
-  "5XL": 5.50,
-  "6XL": 6.50,
-};
-
 export interface PriceTier {
   minQty: number;
   maxQty: number;

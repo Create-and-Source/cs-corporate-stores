@@ -780,6 +780,7 @@ function ProductDetailModal({ product, isSelected, onClose, onToggle }: {
   const [detailedSizes, setDetailedSizes] = useState<string[]>([]);
   const [fullDescription, setFullDescription] = useState("");
   const [loadingDetails, setLoadingDetails] = useState(false);
+  const [showFullDesc, setShowFullDesc] = useState(false);
 
   // Fetch bulk pricing + product details on mount
   useEffect(() => {
@@ -895,9 +896,21 @@ function ProductDetailModal({ product, isSelected, onClose, onToggle }: {
                   <span className="text-sm text-smoky ml-2 font-normal">per item</span>
                 </p>
               )}
-              <p className="text-xs text-smoky leading-relaxed mb-3">
-                {fullDescription || product.description || "Loading product details..."}
-              </p>
+              {(fullDescription || product.description) ? (
+                <div className="mb-3">
+                  <p className={`text-xs text-smoky leading-relaxed ${showFullDesc ? "" : "line-clamp-3"}`}>
+                    {(fullDescription || product.description || "").replace(/Disclaimer:.*$/i, "").replace(/\.\.:/g, ". ").replace(/\.:/g, ". ")}
+                  </p>
+                  <button
+                    onClick={() => setShowFullDesc(!showFullDesc)}
+                    className="text-[10px] text-kraft-dark hover:text-black mt-1 underline"
+                  >
+                    {showFullDesc ? "Show less" : "See more"}
+                  </button>
+                </div>
+              ) : (
+                <p className="text-xs text-smoky italic">Loading details...</p>
+              )}
 
               {/* Available sizes */}
               {detailedSizes.length > 0 && (
@@ -921,17 +934,14 @@ function ProductDetailModal({ product, isSelected, onClose, onToggle }: {
                 Available Colors ({(detailedColors.length || product.colors?.length || 0)})
               </p>
               <div className="flex flex-wrap gap-1.5">
-                {(detailedColors.length > 0 ? detailedColors : product.colors || []).map((color) => (
+                {(detailedColors.length > 0 ? detailedColors : product.colors || []).map((color, colorIndex) => (
                   <button
                     key={color}
                     onClick={() => {
-                      // Try to find an image matching this color
                       if (productImages.length > 1) {
-                        const colorLower = color.toLowerCase();
-                        const matchIndex = productImages.findIndex((_, i) => i > 0); // Cycle through images
-                        if (matchIndex >= 0) {
-                          setActiveImageIndex((prev) => (prev + 1) % productImages.length);
-                        }
+                        const totalColors = detailedColors.length || product.colors?.length || 1;
+                        const imgIdx = Math.floor((colorIndex / totalColors) * productImages.length);
+                        setActiveImageIndex(Math.min(imgIdx, productImages.length - 1));
                       }
                     }}
                     className="px-2.5 py-1.5 bg-off-white text-[10px] tracking-wide hover:bg-kraft/10 transition-colors cursor-pointer"
