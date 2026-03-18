@@ -95,6 +95,7 @@ export function SmartSearch({ onSearch, onCategorySelect }: SmartSearchProps) {
     e.preventDefault();
     if (input) {
       onSearch(input);
+      onCategorySelect("All"); // Don't filter by category when typing a custom search
       setShowSuggestions(false);
     }
   };
