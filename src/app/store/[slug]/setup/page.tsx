@@ -315,7 +315,7 @@ export default function SetupPage() {
                   className="w-full px-4 py-3 border border-gray-200 text-sm focus:outline-none focus:border-kraft"
                 >
                   <option value="">Select your industry</option>
-                  {["Technology", "Healthcare", "Finance", "Education", "Real Estate", "Marketing", "Legal", "Construction", "Non-Profit", "Other"].map((i) => (
+                  {["Technology", "Healthcare", "Finance", "Education", "Real Estate", "Marketing", "Legal", "Construction", "Non-Profit", "Hospitality", "Retail", "Manufacturing", "Media & Entertainment", "Sports & Fitness", "Automotive", "Insurance", "Government", "Agriculture", "Energy", "Consulting", "Staffing & HR", "Logistics", "Restaurant & Food", "Beauty & Wellness", "Other"].map((i) => (
                     <option key={i} value={i}>{i}</option>
                   ))}
                 </select>

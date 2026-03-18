@@ -78,7 +78,7 @@ export default function OpsStoresPage() {
       ) : (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
           {stores.map((store) => (
-            <div key={store.id} className="bg-white border border-gray-100 p-5 hover:border-kraft transition-colors">
+            <a key={store.id} href={`/ops/stores/${store.id}`} className="bg-white border border-gray-100 p-5 hover:border-kraft transition-colors block">
               <div className="flex items-start justify-between mb-4">
                 <div>
                   <h3 className="font-bold text-lg">{store.company_name}</h3>
