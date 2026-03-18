@@ -11,7 +11,7 @@ interface Suggestion {
 
 const SUGGESTIONS: Suggestion[] = [
   { query: "breathable polos for the sales team", category: "Polos", icon: "" },
-  { query: "women's performance polo", category: "Polos", icon: "" },
+  { query: "ladies performance polo", category: "Polos", icon: "" },
   { query: "men's heavyweight hoodie", category: "Hoodies & Sweats", icon: "" },
   { query: "lightweight tee for a summer event", category: "T-Shirts & Tops", icon: "" },
   { query: "premium jacket for executives", category: "Outerwear", icon: "" },
@@ -23,7 +23,7 @@ const SUGGESTIONS: Suggestion[] = [
   { query: "fleece quarter zip for fall", category: "Quarter Zips", icon: "" },
   { query: "new hire welcome kit essentials", category: "T-Shirts & Tops", icon: "" },
   { query: "holiday gifts under $30", category: "Hoodies & Sweats", icon: "" },
-  { query: "women's fitted v-neck", category: "T-Shirts & Tops", icon: "" },
+  { query: "ladies fitted v-neck tee", category: "T-Shirts & Tops", icon: "" },
   { query: "canvas tote for trade shows", category: "Bags", icon: "" },
   { query: "moisture-wicking athletic wear", category: "T-Shirts & Tops", icon: "" },
   { query: "beanie for winter giveaway", category: "Headwear", icon: "" },
@@ -101,6 +101,8 @@ export function SmartSearch({ onSearch, onCategorySelect }: SmartSearchProps) {
 
   const handleSuggestionClick = (suggestion: Suggestion) => {
     setInput(suggestion.query);
+    // Send BOTH the search text and category
+    onSearch(suggestion.query);
     onCategorySelect(suggestion.category);
     setShowSuggestions(false);
   };

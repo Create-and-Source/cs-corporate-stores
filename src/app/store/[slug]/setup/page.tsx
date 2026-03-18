@@ -423,8 +423,8 @@ export default function SetupPage() {
             {/* Smart Search */}
             <div className="mb-4">
               <SmartSearch
-                onSearch={(q) => { setSearchInput(q); setActiveCategory("All"); setCatalogPage(1); }}
-                onCategorySelect={(cat) => { setSearchInput(""); setActiveCategory(cat); setCatalogPage(1); }}
+                onSearch={(q) => { setSearchInput(q); setCatalogPage(1); }}
+                onCategorySelect={(cat) => { setActiveCategory(cat); setCatalogPage(1); }}
               />
             </div>
 
