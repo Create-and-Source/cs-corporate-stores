@@ -141,6 +141,10 @@ export default function AdminDashboard() {
                   href: "/store/acme-corp/admin/credits",
                 },
                 {
+                  label: "Product Catalog",
+                  href: "/store/acme-corp/admin/catalog",
+                },
+                {
                   label: "All Orders",
                   href: "/store/acme-corp/admin/orders",
                 },
