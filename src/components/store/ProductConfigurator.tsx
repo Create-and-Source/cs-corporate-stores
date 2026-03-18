@@ -22,6 +22,8 @@ interface ProductConfiguratorProps {
   storeSlug: string;
   locations: Array<{ id: string; label: string }>;
   onConfigChange: (placements: PlacementConfig[]) => void;
+  selectedColor?: string;
+  colorImageUrl?: string | null;
 }
 
 export function ProductConfigurator({
@@ -33,6 +35,8 @@ export function ProductConfigurator({
   storeSlug,
   locations,
   onConfigChange,
+  selectedColor,
+  colorImageUrl,
 }: ProductConfiguratorProps) {
   const [placements, setPlacements] = useState<PlacementConfig[]>([]);
   const [activeLocation, setActiveLocation] = useState<string | null>(null);
@@ -131,7 +135,9 @@ export function ProductConfigurator({
         body: JSON.stringify({
           blueprintId: parseInt(productBlueprintId),
           imageUrl,
-          position: firstLogo.locationId === "left_chest" ? "front" : firstLogo.locationId,
+          position: ["left_chest", "right_chest"].includes(firstLogo.locationId) ? "front" : firstLogo.locationId,
+          placement: firstLogo.locationId,
+          color: selectedColor || undefined,
         }),
       });
 
@@ -298,7 +304,7 @@ export function ProductConfigurator({
               {configuredPlacements.map((placement) => (
                 <MockupPreview
                   key={placement.locationId}
-                  productImage={productImage}
+                  productImage={colorImageUrl || productImage}
                   productName={productName}
                   logoUrl={placement.logoUrl!}
                   placement={placement.locationId}

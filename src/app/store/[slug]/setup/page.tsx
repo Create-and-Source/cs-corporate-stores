@@ -1128,6 +1128,8 @@ function ProductDetailModal({ product, isSelected, onClose, onToggle, storeSlug 
               storeSlug={storeSlug}
               locations={getDefaultLocations(product.category)}
               onConfigChange={() => {}}
+              selectedColor={selectedProductColors.size > 0 ? [...selectedProductColors][0] : undefined}
+              colorImageUrl={productImages.length > 0 ? productImages[activeImageIndex] : null}
             />
           </div>
 
