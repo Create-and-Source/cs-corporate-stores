@@ -55,6 +55,7 @@ interface SetupData {
 interface CatalogProduct {
   id: string;
   name: string;
+  description?: string;
   image: string | null;
   category: string;
   clientPrice: number | null;
@@ -847,10 +848,15 @@ function ProductDetailModal({ product, isSelected, onClose, onToggle }: {
                   <span className="text-sm text-smoky ml-2 font-normal">per item</span>
                 </p>
               )}
-              <p className="text-xs text-smoky leading-relaxed">
-                Premium quality product ready for custom decoration with your company logo.
-                Available in multiple colors and sizes.
-              </p>
+              {product.description ? (
+                <p className="text-xs text-smoky leading-relaxed">
+                  {product.description}
+                </p>
+              ) : (
+                <p className="text-xs text-smoky leading-relaxed italic">
+                  Product details loading from catalog...
+                </p>
+              )}
             </div>
           </div>
 
@@ -952,15 +958,24 @@ function ProductDetailModal({ product, isSelected, onClose, onToggle }: {
             ) : null}
           </div>
 
-          {/* Suggested Credit Price */}
+          {/* Pricing Explanation */}
           {product.clientPrice && (
-            <div className="bg-kraft/10 border border-kraft/20 p-4">
-              <p className="text-xs font-semibold mb-1">Suggested Employee Credit Price</p>
-              <p className="text-2xl font-bold">${(product.clientPrice / 100).toFixed(2)}</p>
-              <p className="text-[10px] text-smoky mt-1">
-                This is what each employee would &ldquo;spend&rdquo; in credits to get this item.
-                Price includes product + decoration.
-              </p>
+            <div className="bg-kraft/10 border border-kraft/20 p-5">
+              <p className="text-xs font-semibold mb-3">How Pricing Works</p>
+              <div className="space-y-3 text-xs">
+                <div className="flex justify-between items-center pb-3 border-b border-kraft/20">
+                  <span className="text-smoky">Your cost per item (includes decoration)</span>
+                  <span className="font-bold text-lg">${(product.clientPrice / 100).toFixed(2)}</span>
+                </div>
+                <p className="text-smoky leading-relaxed">
+                  This is what you pay Create & Source per item. You load credits for your employees at this price.
+                  Your employees &ldquo;spend&rdquo; credits to order — <strong>no money changes hands at checkout</strong>.
+                </p>
+                <p className="text-smoky leading-relaxed">
+                  Most companies absorb the cost as a perk (new hire gifts, bonuses, holiday rewards).
+                  You set the credit budget per employee — they shop within that budget.
+                </p>
+              </div>
             </div>
           )}
 
