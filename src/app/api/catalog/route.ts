@@ -31,7 +31,19 @@ interface CatalogProduct {
 let feCache: { products: CatalogProduct[]; timestamp: number } | null = null;
 let printifyCache: { products: CatalogProduct[]; timestamp: number } | null = null;
 let priceMap: Map<string, number> | null = null;
+let imageMap: Record<string, string | null> | null = null;
 const CACHE_TTL = 1000 * 60 * 60;
+
+function loadImageMap(): Record<string, string | null> {
+  if (imageMap) return imageMap;
+  try {
+    const data = readFileSync(join(process.cwd(), "src/data/product-images.json"), "utf-8");
+    imageMap = JSON.parse(data);
+    return imageMap!;
+  } catch {
+    return {};
+  }
+}
 
 function loadPriceMap(): Map<string, number> {
   if (priceMap) return priceMap;
@@ -59,6 +71,7 @@ export async function GET(req: NextRequest) {
 
   let allProducts: CatalogProduct[] = [];
   const prices = loadPriceMap();
+  const images = loadImageMap();
 
   // --- Printify (shown FIRST — they have photos) ---
   if (provider === "all" || provider === "printify") {
@@ -154,7 +167,7 @@ export async function GET(req: NextRequest) {
             id: `fe-${productId}`,
             name: csvInfo.name,
             description: details?.description || csvInfo.name,
-            image: null, // FE doesn't provide images
+            image: images[productId] || null,
             category: mapFECategory(csvInfo.name),
             provider: "fulfill_engine",
             providerId: productId,
@@ -163,7 +176,7 @@ export async function GET(req: NextRequest) {
             brand: csvInfo.brand,
             colors: csvInfo.colors,
             clientPrice,
-            hasImage: false,
+            hasImage: !!(images[productId]),
           });
         }
 
