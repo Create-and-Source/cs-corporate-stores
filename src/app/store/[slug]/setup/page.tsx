@@ -1195,7 +1195,19 @@ function getDefaultLocations(category: string): Array<{ id: string; label: strin
     return [{ id: "wrap", label: "Wrap Around" }, { id: "front", label: "Front" }, { id: "laser_engrave", label: "Laser Engrave" }];
   if (cat.includes("bag") || cat.includes("tote") || cat.includes("backpack"))
     return [{ id: "front", label: "Front" }, { id: "back", label: "Back" }];
-  return [{ id: "front", label: "Front" }, { id: "back", label: "Back" }, { id: "left_chest", label: "Left Chest" }];
+  if (cat.includes("office") || cat.includes("notebook") || cat.includes("journal") || cat.includes("planner") || cat.includes("mousepad"))
+    return [{ id: "front", label: "Front Cover" }, { id: "back", label: "Back Cover" }];
+  if (cat.includes("wall") || cat.includes("poster") || cat.includes("canvas") || cat.includes("art"))
+    return [{ id: "front", label: "Full Print" }];
+  if (cat.includes("tech") || cat.includes("phone") || cat.includes("case") || cat.includes("laptop"))
+    return [{ id: "front", label: "Full Print" }, { id: "back", label: "Back" }];
+  if (cat.includes("home") || cat.includes("blanket") || cat.includes("pillow") || cat.includes("towel"))
+    return [{ id: "front", label: "Front" }, { id: "back", label: "Back" }];
+  if (cat.includes("accessories") || cat.includes("sticker") || cat.includes("patch") || cat.includes("pin"))
+    return [{ id: "front", label: "Full Print" }];
+  if (cat.includes("footwear") || cat.includes("sock") || cat.includes("shoe"))
+    return [{ id: "front", label: "Outside" }, { id: "back", label: "Sole" }];
+  return [{ id: "front", label: "Front" }, { id: "back", label: "Back" }];
 }
 
 function Tooltip({ text }: { text: string }) {
