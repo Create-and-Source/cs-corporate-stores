@@ -62,20 +62,13 @@ export default function CheckoutPage() {
 
     setCalculatingShipping(true);
 
-    // Estimate shipping based on item count and location
-    // In production, this would call Printify/FE shipping APIs
-    const itemCount = cart.items.reduce((sum, i) => sum + i.quantity, 0);
-    const baseShipping = 599; // $5.99 base
-    const perItem = 199; // $1.99 per additional item
-    const estimatedShipping = baseShipping + Math.max(0, itemCount - 1) * perItem;
-
-    // Simulate API call
-    await new Promise((r) => setTimeout(r, 1000));
+    // $5 flat rate shipping — every order, any size
+    await new Promise((r) => setTimeout(r, 500));
 
     setShippingRate({
-      method: "Standard Shipping",
-      cost: estimatedShipping,
-      estimatedDays: "5-7 business days",
+      method: "$5 Flat Rate Shipping",
+      cost: 500,
+      estimatedDays: "5-10 business days",
     });
     setAddressSaved(true);
     setCalculatingShipping(false);
