@@ -52,6 +52,32 @@ export default function CatalogPage() {
   const [uploading, setUploading] = useState(false);
   const [selectedLocations, setSelectedLocations] = useState<Set<string>>(new Set());
   const [selectedColors, setSelectedColors] = useState<Set<string>>(new Set());
+  const [pricing, setPricing] = useState<{
+    clientPrice: number;
+    clientPriceFormatted: string;
+    breakdown?: { blank: string; decoration: string };
+  } | null>(null);
+  const [loadingPrice, setLoadingPrice] = useState(false);
+
+  // Fetch pricing when product selected or locations change
+  const fetchPricing = async (productId: string, locations: number, method: string) => {
+    setLoadingPrice(true);
+    try {
+      const res = await fetch(
+        `/api/catalog/pricing?productId=${productId}&locations=${locations}&method=${method}`
+      );
+      if (res.ok) {
+        const data = await res.json();
+        setPricing(data);
+        setCustomPrice((data.clientPrice / 100).toFixed(2));
+      } else {
+        setPricing(null);
+      }
+    } catch {
+      setPricing(null);
+    }
+    setLoadingPrice(false);
+  };
 
   const toggleColor = (color: string) => {
     setSelectedColors((prev) => {
@@ -118,6 +144,10 @@ export default function CatalogPage() {
         next.delete(locId);
       } else {
         next.add(locId);
+      }
+      // Refetch pricing with new location count
+      if (selectedProduct?.provider === "fulfill_engine") {
+        fetchPricing(selectedProduct.providerId, next.size || 1, "dtf");
       }
       return next;
     });
@@ -309,6 +339,11 @@ export default function CatalogPage() {
                         setArtworkName("");
                         setSelectedLocations(new Set());
                         setSelectedColors(new Set());
+                        setPricing(null);
+                        // Auto-fetch pricing for FE products
+                        if (product.provider === "fulfill_engine") {
+                          fetchPricing(product.providerId, 1, "dtf");
+                        }
                       }
                     }}
                     className={`border transition-all text-left ${
@@ -578,54 +613,92 @@ export default function CatalogPage() {
                 </div>
               )}
 
-              {/* Pricing Summary */}
+              {/* Pricing */}
               <div className="border-t border-gray-100 pt-6">
                 <div className="flex items-center gap-2 mb-3">
                   <span className="w-6 h-6 bg-kraft text-black text-xs font-bold flex items-center justify-center">$</span>
-                  <p className="text-sm font-semibold">Your Price Per Item</p>
+                  <p className="text-sm font-semibold">Pricing</p>
                 </div>
-                <p className="text-[10px] text-smoky mb-3">
-                  This is what each item will cost. Your employees will use credits to &quot;purchase&quot; items at this price.
-                </p>
 
-                <div className="bg-off-white p-4 space-y-3">
-                  <div className="flex items-center gap-3">
-                    <span className="text-2xl font-bold">$</span>
-                    <input
-                      type="number"
-                      placeholder="25.00"
-                      value={customPrice}
-                      onChange={(e) => setCustomPrice(e.target.value)}
-                      className="flex-1 px-4 py-3 border border-gray-200 text-lg font-semibold focus:outline-none focus:border-kraft"
-                      step="0.01"
-                      min="0"
-                    />
-                    <span className="text-sm text-smoky">per item</span>
+                {loadingPrice ? (
+                  <div className="bg-off-white p-6 flex items-center justify-center">
+                    <Loader2 size={18} className="animate-spin text-kraft mr-2" />
+                    <span className="text-sm text-smoky">Calculating price...</span>
                   </div>
-
-                  {customPrice && (
-                    <div className="text-xs text-smoky space-y-1 pt-2 border-t border-gray-200">
-                      <div className="flex justify-between">
-                        <span>10 employees × ${parseFloat(customPrice || "0").toFixed(2)}</span>
-                        <span className="font-medium text-black">
-                          ${(parseFloat(customPrice || "0") * 10).toFixed(2)} total
-                        </span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span>25 employees × ${parseFloat(customPrice || "0").toFixed(2)}</span>
-                        <span className="font-medium text-black">
-                          ${(parseFloat(customPrice || "0") * 25).toFixed(2)} total
-                        </span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span>50 employees × ${parseFloat(customPrice || "0").toFixed(2)}</span>
-                        <span className="font-medium text-black">
-                          ${(parseFloat(customPrice || "0") * 50).toFixed(2)} total
-                        </span>
-                      </div>
+                ) : pricing ? (
+                  <div className="bg-off-white p-5 space-y-4">
+                    {/* Main price */}
+                    <div className="text-center">
+                      <p className="text-3xl font-bold">
+                        {pricing.clientPriceFormatted}
+                      </p>
+                      <p className="text-[10px] tracking-[0.15em] uppercase text-smoky mt-1">
+                        per item
+                      </p>
                     </div>
-                  )}
-                </div>
+
+                    {/* Breakdown */}
+                    {pricing.breakdown && (
+                      <div className="text-xs text-smoky space-y-1.5 pt-3 border-t border-gray-200">
+                        <div className="flex justify-between">
+                          <span>Product</span>
+                          <span>{pricing.breakdown.blank}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span>Decoration</span>
+                          <span>{pricing.breakdown.decoration}</span>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Volume estimates */}
+                    <div className="text-xs space-y-1.5 pt-3 border-t border-gray-200">
+                      <p className="text-[10px] tracking-[0.1em] uppercase text-smoky font-medium mb-2">
+                        Budget Estimates
+                      </p>
+                      {[10, 25, 50, 100].map((qty) => (
+                        <div key={qty} className="flex justify-between">
+                          <span className="text-smoky">{qty} employees</span>
+                          <span className="font-medium text-black">
+                            ${((pricing.clientPrice / 100) * qty).toFixed(2)}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ) : (
+                  <div className="bg-off-white p-5">
+                    <p className="text-[10px] text-smoky mb-3">
+                      Set the credit price your employees will see
+                    </p>
+                    <div className="flex items-center gap-3">
+                      <span className="text-2xl font-bold">$</span>
+                      <input
+                        type="number"
+                        placeholder="25.00"
+                        value={customPrice}
+                        onChange={(e) => setCustomPrice(e.target.value)}
+                        className="flex-1 px-4 py-3 border border-gray-200 text-lg font-semibold focus:outline-none focus:border-kraft"
+                        step="0.01"
+                        min="0"
+                      />
+                      <span className="text-sm text-smoky">per item</span>
+                    </div>
+
+                    {customPrice && (
+                      <div className="text-xs space-y-1.5 pt-3 mt-3 border-t border-gray-200">
+                        {[10, 25, 50, 100].map((qty) => (
+                          <div key={qty} className="flex justify-between">
+                            <span className="text-smoky">{qty} employees</span>
+                            <span className="font-medium text-black">
+                              ${(parseFloat(customPrice || "0") * qty).toFixed(2)}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
 
               {/* Add to Store button */}
