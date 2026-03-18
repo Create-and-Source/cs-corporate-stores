@@ -3,6 +3,7 @@ import {
   getFulfillEngineProductIds,
   getFulfillEngineProducts,
 } from "@/lib/fulfill-engine";
+import { ssaImageUrl } from "@/lib/ssactivewear";
 import FE_PRICES_DATA from "@/data/fe-prices";
 import IMAGE_CACHE_DATA from "@/data/product-images";
 
@@ -203,6 +204,41 @@ export async function GET(req: NextRequest) {
       } catch (e) {
         console.error("Fulfill Engine catalog error:", e);
       }
+    }
+  }
+
+  // --- Enrich FE products with SSActivewear images ---
+  // Look up SSA style images for FE products that have ssaSku mappings
+  if (feCache || allProducts.some((p) => p.provider === "fulfill_engine")) {
+    try {
+      const { getStyles } = await import("@/lib/ssactivewear");
+      const ssaStyles = await getStyles();
+      const ssaStyleMap = new Map<string, { styleImage: string | null; brandName: string }>();
+      for (const s of ssaStyles) {
+        ssaStyleMap.set(s.styleName.toLowerCase(), { styleImage: s.styleImage, brandName: s.brandName });
+      }
+
+      // Match FE products to SSA by ssaSku or brand+style name
+      for (const product of allProducts) {
+        if (product.provider !== "fulfill_engine") continue;
+        if (product.hasImage) continue; // Already has an image
+
+        // Try matching by product name keywords against SSA style names
+        const nameParts = product.name.toLowerCase().split(/\s+/);
+        for (const [styleName, ssaInfo] of ssaStyleMap) {
+          if (nameParts.some((part) => part.length > 2 && styleName.includes(part)) ||
+              styleName.split(/\s+/).some((sp) => sp.length > 2 && product.name.toLowerCase().includes(sp))) {
+            const img = ssaImageUrl(ssaInfo.styleImage);
+            if (img) {
+              product.image = img;
+              product.hasImage = true;
+              break;
+            }
+          }
+        }
+      }
+    } catch (e) {
+      console.error("SSA image enrichment error:", e);
     }
   }
 
