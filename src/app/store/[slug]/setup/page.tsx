@@ -83,6 +83,7 @@ export default function SetupPage() {
   const [categories, setCategories] = useState<string[]>([]);
   const [catalogPage, setCatalogPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
+  const [previewProduct, setPreviewProduct] = useState<CatalogProduct | null>(null);
 
   // Load saved progress
   useEffect(() => {
@@ -456,37 +457,57 @@ export default function SetupPage() {
                   {products.map((product) => {
                     const isSelected = data.selectedProducts.some((p) => p.id === product.id);
                     return (
-                      <button
+                      <div
                         key={product.id}
-                        onClick={() => toggleProduct(product)}
                         className={`border text-left transition-all ${
                           isSelected
                             ? "border-success bg-success/5 ring-2 ring-success/20"
                             : "border-gray-100 hover:border-kraft"
                         }`}
                       >
-                        <div className="aspect-square bg-off-white overflow-hidden relative">
-                          {product.image ? (
-                            <img src={product.image} alt={product.name} className="w-full h-full object-contain p-2" loading="lazy" />
-                          ) : (
-                            <div className="w-full h-full flex items-center justify-center">
-                              <Package size={20} className="text-kraft" />
-                            </div>
-                          )}
-                          {isSelected && (
-                            <div className="absolute top-1 right-1 bg-success text-white w-5 h-5 flex items-center justify-center">
-                              <Check size={12} />
-                            </div>
-                          )}
+                        <button
+                          onClick={() => setPreviewProduct(product)}
+                          className="w-full"
+                        >
+                          <div className="aspect-square bg-off-white overflow-hidden relative">
+                            {product.image ? (
+                              <img src={product.image} alt={product.name} className="w-full h-full object-contain p-2" loading="lazy" />
+                            ) : (
+                              <div className="w-full h-full flex items-center justify-center">
+                                <Package size={20} className="text-kraft" />
+                              </div>
+                            )}
+                            {isSelected && (
+                              <div className="absolute top-1 right-1 bg-success text-white w-5 h-5 flex items-center justify-center">
+                                <Check size={12} />
+                              </div>
+                            )}
+                          </div>
+                          <div className="p-2">
+                            <p className="text-[9px] tracking-wider uppercase text-kraft-dark">{product.category}</p>
+                            <p className="text-xs font-medium line-clamp-2 mt-0.5">{product.name}</p>
+                            {product.clientPrice && (
+                              <p className="text-xs font-bold mt-1">${(product.clientPrice / 100).toFixed(2)}</p>
+                            )}
+                          </div>
+                        </button>
+                        <div className="px-2 pb-2">
+                          <button
+                            onClick={() => toggleProduct(product)}
+                            className={`w-full py-1.5 text-[9px] tracking-[0.1em] uppercase font-medium flex items-center justify-center gap-1 transition-all ${
+                              isSelected
+                                ? "bg-success/10 text-success"
+                                : "bg-black text-white hover:bg-brown"
+                            }`}
+                          >
+                            {isSelected ? (
+                              <><Check size={10} /> Selected</>
+                            ) : (
+                              <><Plus size={10} /> Add</>
+                            )}
+                          </button>
                         </div>
-                        <div className="p-2">
-                          <p className="text-[9px] tracking-wider uppercase text-kraft-dark">{product.category}</p>
-                          <p className="text-xs font-medium line-clamp-2 mt-0.5">{product.name}</p>
-                          {product.clientPrice && (
-                            <p className="text-xs font-bold mt-1">${(product.clientPrice / 100).toFixed(2)}</p>
-                          )}
-                        </div>
-                      </button>
+                      </div>
                     );
                   })}
                 </div>
@@ -718,6 +739,71 @@ export default function SetupPage() {
             ) : (
               <div />
             )}
+          </div>
+        </div>
+      )}
+
+      {/* Product Detail Modal */}
+      {previewProduct && (
+        <div
+          className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4"
+          onClick={(e) => { if (e.target === e.currentTarget) setPreviewProduct(null); }}
+        >
+          <div className="bg-white max-w-lg w-full max-h-[80vh] overflow-y-auto">
+            <div className="flex items-center justify-between p-5 border-b border-gray-100">
+              <h3 className="font-bold">{previewProduct.name}</h3>
+              <button onClick={() => setPreviewProduct(null)}>
+                <X size={18} />
+              </button>
+            </div>
+
+            <div className="p-5">
+              {/* Image */}
+              <div className="aspect-square bg-off-white mb-4 flex items-center justify-center overflow-hidden">
+                {previewProduct.image ? (
+                  <img
+                    src={previewProduct.image}
+                    alt={previewProduct.name}
+                    className="w-full h-full object-contain p-4"
+                  />
+                ) : (
+                  <div className="text-center">
+                    <Package size={48} className="mx-auto text-kraft mb-2" />
+                    <p className="text-xs text-smoky">{previewProduct.category}</p>
+                  </div>
+                )}
+              </div>
+
+              <p className="text-[10px] tracking-[0.15em] uppercase text-kraft-dark mb-1">
+                {previewProduct.category}
+              </p>
+              <h2 className="text-xl font-bold mb-3">{previewProduct.name}</h2>
+
+              {previewProduct.clientPrice && (
+                <p className="text-2xl font-bold mb-4">
+                  ${(previewProduct.clientPrice / 100).toFixed(2)}
+                  <span className="text-sm text-smoky ml-2 font-normal">per item</span>
+                </p>
+              )}
+
+              <button
+                onClick={() => {
+                  toggleProduct(previewProduct);
+                  setPreviewProduct(null);
+                }}
+                className={`w-full py-3 text-sm tracking-[0.12em] uppercase font-medium flex items-center justify-center gap-2 transition-all ${
+                  data.selectedProducts.some((p) => p.id === previewProduct.id)
+                    ? "bg-error/10 text-error border border-error/20"
+                    : "bg-black text-white hover:bg-brown"
+                }`}
+              >
+                {data.selectedProducts.some((p) => p.id === previewProduct.id) ? (
+                  <><X size={16} /> Remove from Store</>
+                ) : (
+                  <><Plus size={16} /> Add to Store</>
+                )}
+              </button>
+            </div>
           </div>
         </div>
       )}
