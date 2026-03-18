@@ -2,6 +2,10 @@ import { NextRequest, NextResponse } from "next/server";
 
 const PRINTIFY_API_KEY = process.env.PRINTIFY_API_KEY || "";
 const PRINTIFY_SHOP_ID = process.env.PRINTIFY_SHOP_ID || "";
+const DEFAULT_LOGO_URL = "https://cs-corporate-stores.vercel.app/cs-logo.png";
+
+// Cache the Printify image ID for the default logo
+let defaultLogoImageId: string | null = null;
 
 // Cache color images by blueprintId so we don't re-create temp products
 const colorImageCache = new Map<string, { colorImages: Record<string, string>; timestamp: number }>();
@@ -164,7 +168,56 @@ async function fetchColorImages(
 
   if (selectedVariants.length === 0) return {};
 
-  // Create temp product with these variants (no logo needed)
+  // Upload C&S logo to Printify if not already cached
+  if (!defaultLogoImageId) {
+    try {
+      const uploadRes = await fetch("https://api.printify.com/v1/uploads/images.json", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${PRINTIFY_API_KEY}`,
+          "Content-Type": "application/json",
+          "User-Agent": "CreateAndSource/1.0",
+        },
+        body: JSON.stringify({
+          file_name: "cs-logo.png",
+          url: DEFAULT_LOGO_URL,
+        }),
+      });
+      if (uploadRes.ok) {
+        const uploadData = await uploadRes.json();
+        defaultLogoImageId = uploadData.id;
+      }
+    } catch (e) {
+      console.error("Failed to upload default logo to Printify:", e);
+    }
+  }
+
+  const variantIds = selectedVariants.map((v) => v.id);
+
+  // Build print_areas with the C&S logo for realistic mockups
+  const printAreas = defaultLogoImageId
+    ? [
+        {
+          variant_ids: variantIds,
+          placeholders: [
+            {
+              position: "front",
+              images: [
+                {
+                  id: defaultLogoImageId,
+                  x: 0.5,
+                  y: 0.5,
+                  scale: 0.6,
+                  angle: 0,
+                },
+              ],
+            },
+          ],
+        },
+      ]
+    : [];
+
+  // Create temp product with C&S logo
   const productRes = await fetch(
     `https://api.printify.com/v1/shops/${PRINTIFY_SHOP_ID}/products.json`,
     {
@@ -184,46 +237,14 @@ async function fetchColorImages(
           price: 100,
           is_enabled: true,
         })),
-        print_areas: [
-          {
-            variant_ids: selectedVariants.map((v) => v.id),
-            placeholders: [],
-          },
-        ],
+        print_areas: printAreas,
       }),
     }
   );
 
   if (!productRes.ok) {
-    // Try again without print_areas — some blueprints don't require them
-    const retryRes = await fetch(
-      `https://api.printify.com/v1/shops/${PRINTIFY_SHOP_ID}/products.json`,
-      {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${PRINTIFY_API_KEY}`,
-          "Content-Type": "application/json",
-          "User-Agent": "CreateAndSource/1.0",
-        },
-        body: JSON.stringify({
-          title: "Color Preview Temp",
-          description: "Temporary product for color images",
-          blueprint_id: blueprintId,
-          print_provider_id: providerId,
-          variants: selectedVariants.map((v) => ({
-            id: v.id,
-            price: 100,
-            is_enabled: true,
-          })),
-        }),
-      }
-    );
-    if (!retryRes.ok) {
-      console.error("Printify color image product creation failed:", await retryRes.text());
-      return {};
-    }
-    const retryProduct = await retryRes.json();
-    return extractColorImages(retryProduct, selectedVariants);
+    console.error("Printify color image product creation failed:", await productRes.text());
+    return {};
   }
 
   const product = await productRes.json();
