@@ -632,8 +632,8 @@ export default function CatalogPage() {
                 )}
               </div>
 
-              {/* Mockup Preview */}
-              {artworkUrl && selectedProduct.provider === "printify" && (
+              {/* Mockup Preview — works for both Printify and FE */}
+              {artworkUrl && (
                 <div className="border-t border-gray-100 pt-6">
                   <div className="flex items-center justify-between mb-3">
                     <div className="flex items-center gap-2">
@@ -642,7 +642,7 @@ export default function CatalogPage() {
                       </span>
                       <p className="text-sm font-semibold">Preview Your Product</p>
                     </div>
-                    {!generatingMockup && mockupImages.length === 0 && (
+                    {selectedProduct.provider === "printify" && !generatingMockup && mockupImages.length === 0 && (
                       <button
                         onClick={generateMockup}
                         className="bg-black text-white px-4 py-2 text-xs tracking-[0.1em] uppercase font-medium hover:bg-brown transition-colors"
@@ -652,6 +652,7 @@ export default function CatalogPage() {
                     )}
                   </div>
 
+                  {/* Printify: API-generated mockups */}
                   {generatingMockup && (
                     <div className="bg-off-white p-8 flex flex-col items-center justify-center">
                       <Loader2 size={32} className="text-kraft animate-spin mb-3" />
@@ -664,20 +665,62 @@ export default function CatalogPage() {
                     <div className="grid grid-cols-2 gap-3">
                       {mockupImages.slice(0, 4).map((url, i) => (
                         <div key={i} className="bg-off-white overflow-hidden border border-gray-100">
-                          <img
-                            src={url}
-                            alt={`Mockup ${i + 1}`}
-                            className="w-full h-auto"
-                          />
+                          <img src={url} alt={`Mockup ${i + 1}`} className="w-full h-auto" />
                         </div>
                       ))}
                     </div>
                   )}
 
-                  {!generatingMockup && mockupImages.length === 0 && (
-                    <p className="text-xs text-smoky">
-                      Click &quot;Generate Mockup&quot; to see your logo on this product
-                    </p>
+                  {/* FE products OR Printify before generate: Simple overlay preview */}
+                  {(selectedProduct.provider === "fulfill_engine" || (selectedProduct.provider === "printify" && !generatingMockup && mockupImages.length === 0)) && (
+                    <div className="bg-off-white border border-gray-100 overflow-hidden">
+                      <div className="relative aspect-square max-w-xs mx-auto">
+                        {/* Product image base */}
+                        {selectedProduct.image ? (
+                          <img
+                            src={selectedProduct.image}
+                            alt={selectedProduct.name}
+                            className="w-full h-full object-contain"
+                          />
+                        ) : (
+                          <div className="w-full h-full bg-gray-100 flex items-center justify-center">
+                            <div className="text-center">
+                              <Package size={48} className="mx-auto text-gray-300 mb-2" />
+                              <p className="text-xs text-gray-400">{selectedProduct.name}</p>
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Logo overlay */}
+                        {artworkUrl && (
+                          <div
+                            className="absolute flex items-center justify-center"
+                            style={{
+                              // Position based on selected placement
+                              ...(selectedLocations.has("left_chest") || selectedLocations.has("Left Chest")
+                                ? { top: "28%", left: "25%", width: "20%", height: "15%" }
+                                : selectedLocations.has("right_chest") || selectedLocations.has("Right Chest")
+                                  ? { top: "28%", right: "25%", width: "20%", height: "15%" }
+                                  : selectedLocations.has("back") || selectedLocations.has("Back")
+                                    ? { top: "30%", left: "30%", width: "40%", height: "30%" }
+                                    : { top: "25%", left: "30%", width: "40%", height: "25%" }), // Default: center front
+                            }}
+                          >
+                            <img
+                              src={artworkUrl}
+                              alt="Logo preview"
+                              className="max-w-full max-h-full object-contain drop-shadow-md"
+                              style={{ opacity: 0.85 }}
+                            />
+                          </div>
+                        )}
+                      </div>
+                      <p className="text-[9px] text-smoky text-center py-2 bg-white border-t border-gray-100">
+                        {selectedProduct.provider === "fulfill_engine"
+                          ? "Preview — actual mockup may vary based on decoration method"
+                          : "Quick preview — click Generate Mockup for a realistic version"}
+                      </p>
+                    </div>
                   )}
                 </div>
               )}
