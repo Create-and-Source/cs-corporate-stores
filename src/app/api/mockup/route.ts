@@ -6,8 +6,8 @@ const PRINTIFY_SHOP_ID = process.env.PRINTIFY_SHOP_ID || "";
 // Map placement IDs to Printify image coordinates within the print area
 // x, y = center position (0-1), scale = size relative to print area
 const PLACEMENT_COORDS: Record<string, { x: number; y: number; scale: number }> = {
-  left_chest:  { x: 0.64, y: 0.42, scale: 0.45 },
-  right_chest: { x: 0.36, y: 0.42, scale: 0.45 },
+  left_chest:  { x: 0.65, y: 0.32, scale: 0.35 },
+  right_chest: { x: 0.35, y: 0.32, scale: 0.35 },
   front:       { x: 0.5, y: 0.5, scale: 0.8 },
   full_front:  { x: 0.5, y: 0.5, scale: 1.0 },
   back:        { x: 0.5, y: 0.5, scale: 0.8 },
