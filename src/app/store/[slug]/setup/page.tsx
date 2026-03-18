@@ -193,6 +193,21 @@ export default function SetupPage() {
     }
   };
 
+  const handleStartOver = () => {
+    localStorage.removeItem(`cs-setup-${slug}`);
+    setStep(1);
+    setData({
+      companyName: "",
+      industry: "",
+      teamSize: "",
+      primaryColor: "#000000",
+      secondaryColor: "#C4A882",
+      logoUrl: null,
+      logoName: "",
+      selectedProducts: [],
+    });
+  };
+
   // Completion screen
   if (step === 5) {
     return (
@@ -210,7 +225,7 @@ export default function SetupPage() {
           <p className="text-smoky text-sm mb-10">
             Your team can start shopping as soon as you add employees and load credits.
           </p>
-          <div className="flex gap-4 justify-center">
+          <div className="flex gap-4 justify-center flex-wrap">
             <a
               href={`/store/${slug}`}
               className="bg-black text-white px-8 py-4 text-sm tracking-[0.1em] uppercase font-medium hover:bg-brown transition-colors inline-flex items-center gap-2"
@@ -226,6 +241,12 @@ export default function SetupPage() {
               Add Employees
             </a>
           </div>
+          <button
+            onClick={handleStartOver}
+            className="mt-8 text-xs text-smoky hover:text-black transition-colors underline"
+          >
+            Set up a different store
+          </button>
         </div>
       </div>
     );

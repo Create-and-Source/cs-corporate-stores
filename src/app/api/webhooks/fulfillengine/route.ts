@@ -11,11 +11,21 @@ export async function POST(req: NextRequest) {
       body;
 
     // Find the order by provider order ID
-    const { data: order } = await supabase
+    let { data: order } = await supabase
       .from("orders")
       .select("*")
       .eq("provider_order_id", orderId)
       .single();
+
+    // Also check mixed-provider orders (pipe-separated IDs)
+    if (!order) {
+      const { data: mixedOrder } = await supabase
+        .from("orders")
+        .select("*")
+        .like("provider_order_id", `%${orderId}%`)
+        .single();
+      order = mixedOrder;
+    }
 
     if (!order) {
       return NextResponse.json({ error: "Order not found" }, { status: 404 });

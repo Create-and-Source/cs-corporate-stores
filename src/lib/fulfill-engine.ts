@@ -9,24 +9,32 @@ const API_KEY = process.env.FULFILL_ENGINE_API_KEY!;
 const BASE_URL = "https://api.fulfillengine.com/api";
 
 async function feRequest(endpoint: string, options: RequestInit = {}) {
-  const res = await fetch(`${BASE_URL}${endpoint}`, {
-    ...options,
-    headers: {
-      "Content-Type": "application/json",
-      "X-API-KEY": API_KEY,
-      ...options.headers,
-    },
-  });
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 30000);
 
-  if (!res.ok) {
-    const error = await res.text().catch(() => "");
-    throw new Error(
-      `Fulfill Engine API error ${res.status}: ${error}`
-    );
+  try {
+    const res = await fetch(`${BASE_URL}${endpoint}`, {
+      ...options,
+      signal: controller.signal,
+      headers: {
+        "Content-Type": "application/json",
+        "X-API-KEY": API_KEY,
+        ...options.headers,
+      },
+    });
+
+    if (!res.ok) {
+      const error = await res.text().catch(() => "");
+      throw new Error(
+        `Fulfill Engine API error ${res.status}: ${error}`
+      );
+    }
+
+    const text = await res.text();
+    return text ? JSON.parse(text) : null;
+  } finally {
+    clearTimeout(timeout);
   }
-
-  const text = await res.text();
-  return text ? JSON.parse(text) : null;
 }
 
 // Get all catalog product IDs

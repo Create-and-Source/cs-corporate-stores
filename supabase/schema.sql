@@ -171,6 +171,21 @@ END;
 $$ LANGUAGE plpgsql;
 
 -- ============================================
+-- Indexes for performance
+-- ============================================
+
+CREATE INDEX idx_users_store_id ON users(store_id);
+CREATE INDEX idx_users_email ON users(email);
+CREATE INDEX idx_products_store_id ON products(store_id);
+CREATE INDEX idx_orders_store_id ON orders(store_id);
+CREATE INDEX idx_orders_user_id ON orders(user_id);
+CREATE INDEX idx_orders_provider_order_id ON orders(provider_order_id);
+CREATE INDEX idx_order_items_order_id ON order_items(order_id);
+CREATE INDEX idx_credit_balances_user_store ON credit_balances(user_id, store_id);
+CREATE INDEX idx_credit_transactions_user_id ON credit_transactions(user_id);
+CREATE INDEX idx_credit_transactions_store_id ON credit_transactions(store_id);
+
+-- ============================================
 -- Row Level Security
 -- ============================================
 

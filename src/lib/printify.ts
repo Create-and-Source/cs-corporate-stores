@@ -8,23 +8,31 @@ const SHOP_ID = process.env.PRINTIFY_SHOP_ID!;
 const BASE_URL = "https://api.printify.com/v1";
 
 async function printifyRequest(endpoint: string, options: RequestInit = {}) {
-  const res = await fetch(`${BASE_URL}${endpoint}`, {
-    ...options,
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${API_KEY}`,
-      ...options.headers,
-    },
-  });
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 30000);
 
-  if (!res.ok) {
-    const error = await res.json().catch(() => ({}));
-    throw new Error(
-      `Printify API error ${res.status}: ${JSON.stringify(error)}`
-    );
+  try {
+    const res = await fetch(`${BASE_URL}${endpoint}`, {
+      ...options,
+      signal: controller.signal,
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${API_KEY}`,
+        ...options.headers,
+      },
+    });
+
+    if (!res.ok) {
+      const error = await res.json().catch(() => ({}));
+      throw new Error(
+        `Printify API error ${res.status}: ${JSON.stringify(error)}`
+      );
+    }
+
+    return res.json();
+  } finally {
+    clearTimeout(timeout);
   }
-
-  return res.json();
 }
 
 // Get all available blueprints (product templates)

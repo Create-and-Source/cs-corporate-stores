@@ -65,16 +65,22 @@ export default function StorePage() {
           setCategories(cats as string[]);
         }
 
-        // Load credit balance (using first user for demo)
-        const { data: creditData } = await supabase
-          .from("credit_balances")
-          .select("balance")
-          .eq("store_id", storeData.id)
-          .limit(1)
-          .single();
+        // Load credit balance from logged-in user
+        const session = localStorage.getItem(`cs-user-${slug}`);
+        if (session) {
+          try {
+            const user = JSON.parse(session);
+            const { data: creditData } = await supabase
+              .from("credit_balances")
+              .select("balance")
+              .eq("user_id", user.id)
+              .eq("store_id", storeData.id)
+              .single();
 
-        if (creditData) {
-          setCreditBalance(creditData.balance);
+            if (creditData) {
+              setCreditBalance(creditData.balance);
+            }
+          } catch {}
         }
       }
       setLoading(false);

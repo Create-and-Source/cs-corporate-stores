@@ -60,14 +60,21 @@ export function ProductCard({
             </span>
           </p>
           {colors.length > 0 && (
-            <div className="flex gap-1">
-              {colors.slice(0, 4).map((color) => (
-                <div
-                  key={color}
-                  className="w-3 h-3 rounded-full border border-gray-200"
-                  style={{ backgroundColor: color }}
-                />
-              ))}
+            <div className="flex items-center gap-1">
+              {colors.slice(0, 4).map((color) => {
+                const isHex = /^#[0-9A-Fa-f]{3,8}$/.test(color);
+                return isHex ? (
+                  <div
+                    key={color}
+                    className="w-3 h-3 rounded-full border border-gray-200"
+                    style={{ backgroundColor: color }}
+                  />
+                ) : (
+                  <span key={color} className="text-[9px] text-smoky">
+                    {color}
+                  </span>
+                );
+              })}
               {colors.length > 4 && (
                 <span className="text-[10px] text-smoky">
                   +{colors.length - 4}

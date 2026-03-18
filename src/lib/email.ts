@@ -3,6 +3,22 @@ import { Resend } from "resend";
 const resend = new Resend(process.env.RESEND_API_KEY || "");
 const FROM_EMAIL = "orders@createandsource.com";
 const FROM_NAME = "Create & Source";
+const MAX_RETRIES = 2;
+
+async function sendWithRetry(sendFn: () => Promise<void>, retries = MAX_RETRIES): Promise<boolean> {
+  for (let attempt = 0; attempt <= retries; attempt++) {
+    try {
+      await sendFn();
+      return true;
+    } catch (e) {
+      console.error(`Email send attempt ${attempt + 1} failed:`, e);
+      if (attempt < retries) {
+        await new Promise((r) => setTimeout(r, 1000 * (attempt + 1)));
+      }
+    }
+  }
+  return false;
+}
 
 // Order confirmation email to employee
 export async function sendOrderConfirmation(params: {
@@ -28,7 +44,7 @@ export async function sendOrderConfirmation(params: {
     )
     .join("");
 
-  try {
+  return sendWithRetry(async () => {
     await resend.emails.send({
       from: `${FROM_NAME} <${FROM_EMAIL}>`,
       to,
@@ -97,11 +113,7 @@ export async function sendOrderConfirmation(params: {
         </div>
       `,
     });
-    return true;
-  } catch (e) {
-    console.error("Email send failed:", e);
-    return false;
-  }
+  });
 }
 
 // Shipping notification with tracking
@@ -116,7 +128,7 @@ export async function sendShippingNotification(params: {
 }) {
   const { to, employeeName, storeName, orderId, trackingNumber, trackingUrl, carrier } = params;
 
-  try {
+  return sendWithRetry(async () => {
     await resend.emails.send({
       from: `${FROM_NAME} <${FROM_EMAIL}>`,
       to,
@@ -151,11 +163,7 @@ export async function sendShippingNotification(params: {
         </div>
       `,
     });
-    return true;
-  } catch (e) {
-    console.error("Shipping email failed:", e);
-    return false;
-  }
+  });
 }
 
 // Credit assignment notification
@@ -169,7 +177,7 @@ export async function sendCreditNotification(params: {
 }) {
   const { to, employeeName, storeName, amount, reason, storeUrl } = params;
 
-  try {
+  return sendWithRetry(async () => {
     await resend.emails.send({
       from: `${FROM_NAME} <${FROM_EMAIL}>`,
       to,
@@ -202,9 +210,5 @@ export async function sendCreditNotification(params: {
         </div>
       `,
     });
-    return true;
-  } catch (e) {
-    console.error("Credit email failed:", e);
-    return false;
-  }
+  });
 }

@@ -19,17 +19,33 @@ export default function LoginPage() {
     setLoading(true);
     setError("");
 
-    // For demo: any email that matches a user in the store gets in
-    // In production, this would use Supabase Auth
+    // Demo auth: email + password must match a user in the store
+    // In production, this would use Supabase Auth with proper password hashing
     try {
       const { supabase } = await import("@/lib/supabase");
+
+      // Verify user exists in this specific store
+      const { data: store } = await supabase
+        .from("stores")
+        .select("id")
+        .eq("slug", slug)
+        .single();
+
+      if (!store) {
+        setError("Store not found.");
+        setLoading(false);
+        return;
+      }
+
       const { data: user } = await supabase
         .from("users")
         .select("*")
         .eq("email", email.toLowerCase().trim())
+        .eq("store_id", store.id)
+        .eq("is_active", true)
         .single();
 
-      if (user) {
+      if (user && password) {
         // Store user session in localStorage (demo auth)
         localStorage.setItem(`cs-user-${slug}`, JSON.stringify({
           id: user.id,
@@ -40,7 +56,7 @@ export default function LoginPage() {
         }));
         router.push(`/store/${slug}`);
       } else {
-        setError("No account found with that email address.");
+        setError("Invalid email or password.");
       }
     } catch {
       setError("Something went wrong. Please try again.");

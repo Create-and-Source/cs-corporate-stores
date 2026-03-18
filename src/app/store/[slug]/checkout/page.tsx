@@ -19,12 +19,38 @@ export default function CheckoutPage() {
   const slug = params.slug as string;
   const cart = useCart();
   const [storeName, setStoreName] = useState("Store");
-  const creditBalance = 15000; // TODO: pull from user session
+  const [storeId, setStoreId] = useState<string | null>(null);
+  const [userId, setUserId] = useState<string | null>(null);
+  const [creditBalance, setCreditBalance] = useState(0);
 
   useEffect(() => {
     async function loadStore() {
-      const { data: store } = await supabase.from("stores").select("company_name").eq("slug", slug).single();
-      if (store) setStoreName(store.company_name || "Store");
+      const { data: store } = await supabase.from("stores").select("id, company_name").eq("slug", slug).single();
+      if (store) {
+        setStoreName(store.company_name || "Store");
+        setStoreId(store.id);
+      }
+
+      // Get logged-in user from localStorage
+      const session = localStorage.getItem(`cs-user-${slug}`);
+      if (session) {
+        try {
+          const user = JSON.parse(session);
+          setUserId(user.id);
+
+          // Fetch real credit balance
+          const { data: creditData } = await supabase
+            .from("credit_balances")
+            .select("balance")
+            .eq("user_id", user.id)
+            .eq("store_id", store?.id)
+            .single();
+
+          if (creditData) {
+            setCreditBalance(creditData.balance);
+          }
+        } catch {}
+      }
     }
     loadStore();
   }, [slug]);
@@ -51,7 +77,7 @@ export default function CheckoutPage() {
   const shipping = shippingRate?.cost || 0;
   const total = subtotal + shipping;
   const remaining = creditBalance - total;
-  const canCheckout = remaining >= 0 && addressSaved && firstName && lastName;
+  const canCheckout = remaining >= 0 && addressSaved && firstName && lastName && userId && storeId;
 
   const handleCalculateShipping = async () => {
     if (!address1 || !city || !state || !zip) {
@@ -82,8 +108,8 @@ export default function CheckoutPage() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          userId: "a0000001-0000-4000-a000-000000000002", // Demo user
-          storeId: "a1b2c3d4-e5f6-7890-abcd-ef1234567890", // Demo store
+          userId,
+          storeId,
           items: cart.items.map((i) => ({
             product_id: i.productId,
             quantity: i.quantity,
