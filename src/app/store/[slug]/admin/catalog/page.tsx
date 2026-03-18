@@ -30,6 +30,7 @@ interface CatalogProduct {
   printLocations?: Array<{ id: string; label: string }>;
   printMethods?: string[];
   brand?: string;
+  colors?: string[];
 }
 
 export default function CatalogPage() {
@@ -50,6 +51,19 @@ export default function CatalogPage() {
   const [artworkName, setArtworkName] = useState("");
   const [uploading, setUploading] = useState(false);
   const [selectedLocations, setSelectedLocations] = useState<Set<string>>(new Set());
+  const [selectedColors, setSelectedColors] = useState<Set<string>>(new Set());
+
+  const toggleColor = (color: string) => {
+    setSelectedColors((prev) => {
+      const next = new Set(prev);
+      if (next.has(color)) {
+        next.delete(color);
+      } else {
+        next.add(color);
+      }
+      return next;
+    });
+  };
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -294,6 +308,7 @@ export default function CatalogPage() {
                         setArtworkUrl(null);
                         setArtworkName("");
                         setSelectedLocations(new Set());
+                        setSelectedColors(new Set());
                       }
                     }}
                     className={`border transition-all text-left ${
@@ -377,13 +392,20 @@ export default function CatalogPage() {
         )}
       </div>
 
-      {/* Product Detail Modal */}
+      {/* Product Configurator Modal */}
       {selectedProduct && (
-        <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
-          <div className="bg-white max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+        <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4"
+          onClick={(e) => { if (e.target === e.currentTarget) setSelectedProduct(null); }}
+        >
+          <div className="bg-white max-w-3xl w-full max-h-[90vh] overflow-y-auto">
             {/* Modal header */}
-            <div className="flex items-center justify-between p-5 border-b border-gray-100">
-              <h2 className="font-bold text-lg">Product Details</h2>
+            <div className="flex items-center justify-between p-5 border-b border-gray-100 sticky top-0 bg-white z-10">
+              <div>
+                <h2 className="font-bold text-lg">{selectedProduct.name}</h2>
+                <p className="text-[10px] tracking-[0.15em] uppercase text-kraft-dark mt-0.5">
+                  {selectedProduct.category}
+                </p>
+              </div>
               <button
                 onClick={() => setSelectedProduct(null)}
                 className="p-2 hover:bg-off-white transition-colors"
@@ -392,10 +414,10 @@ export default function CatalogPage() {
               </button>
             </div>
 
-            <div className="p-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {/* Image */}
-                <div className="aspect-square bg-off-white flex items-center justify-center overflow-hidden">
+            <div className="p-6 space-y-6">
+              {/* Top section: image + description */}
+              <div className="flex gap-6">
+                <div className="w-40 h-40 bg-off-white flex items-center justify-center overflow-hidden flex-shrink-0">
                   {selectedProduct.image ? (
                     <img
                       src={selectedProduct.image}
@@ -404,174 +426,236 @@ export default function CatalogPage() {
                     />
                   ) : (
                     <div className="text-center">
-                      <Package size={48} className="mx-auto text-kraft mb-3" />
-                      <p className="text-xs text-smoky">
+                      <Package size={36} className="mx-auto text-kraft mb-2" />
+                      <p className="text-[9px] text-smoky">
                         {selectedProduct.brand || selectedProduct.category}
                       </p>
                     </div>
                   )}
                 </div>
-
-                {/* Details */}
-                <div>
-                  <span className="text-[10px] tracking-[0.15em] uppercase text-kraft-dark">
-                    {selectedProduct.category}
-                  </span>
-                  <h3 className="text-xl font-bold mt-1 mb-3">
-                    {selectedProduct.name}
-                  </h3>
-
+                <div className="flex-1">
                   {selectedProduct.description && (
-                    <p className="text-sm text-smoky leading-relaxed mb-4">
+                    <p className="text-sm text-smoky leading-relaxed mb-3">
                       {selectedProduct.description}
                     </p>
                   )}
-
-                  {/* Upload Logo / Artwork */}
-                  <div className="mb-4">
-                    <p className="text-[10px] tracking-[0.15em] uppercase text-smoky mb-2 flex items-center gap-1">
-                      <Image size={12} />
-                      Upload Logo / Artwork
-                    </p>
-
-                    {artworkUrl ? (
-                      <div className="border border-kraft/30 bg-off-white p-3">
-                        <div className="flex items-center gap-3">
-                          <div className="w-16 h-16 bg-white border border-gray-200 flex items-center justify-center overflow-hidden flex-shrink-0">
-                            <img
-                              src={artworkUrl}
-                              alt="Artwork"
-                              className="max-w-full max-h-full object-contain"
-                            />
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <p className="text-xs font-medium truncate">{artworkName}</p>
-                            <p className="text-[10px] text-success mt-0.5">Uploaded</p>
-                          </div>
-                          <button
-                            onClick={() => {
-                              setArtworkUrl(null);
-                              setArtworkName("");
-                            }}
-                            className="p-1.5 hover:bg-white transition-colors"
-                          >
-                            <Trash2 size={14} className="text-smoky" />
-                          </button>
-                        </div>
-                      </div>
-                    ) : (
-                      <label className="border-2 border-dashed border-gray-200 hover:border-kraft p-6 flex flex-col items-center justify-center cursor-pointer transition-colors">
-                        <input
-                          type="file"
-                          accept=".png,.jpg,.jpeg,.svg,.pdf"
-                          onChange={handleFileUpload}
-                          className="hidden"
-                        />
-                        {uploading ? (
-                          <Loader2 size={24} className="text-kraft animate-spin mb-2" />
-                        ) : (
-                          <Upload size={24} className="text-kraft mb-2" />
-                        )}
-                        <p className="text-xs font-medium">
-                          {uploading ? "Uploading..." : "Drop logo here or click to browse"}
-                        </p>
-                        <p className="text-[10px] text-smoky mt-1">
-                          PNG, JPG, SVG, or PDF
-                        </p>
-                      </label>
-                    )}
-                  </div>
-
-                  {/* Print locations — select where logo goes */}
-                  {selectedProduct.printLocations && selectedProduct.printLocations.length > 0 && (
-                    <div className="mb-4">
-                      <p className="text-[10px] tracking-[0.15em] uppercase text-smoky mb-2 flex items-center gap-1">
-                        <MapPin size={12} />
-                        Where should the logo go?
-                      </p>
-                      <div className="flex flex-wrap gap-1.5">
-                        {selectedProduct.printLocations.map((loc) => (
-                          <button
-                            key={loc.id}
-                            onClick={() => toggleLocation(loc.id)}
-                            className={`px-3 py-1.5 text-[10px] tracking-wide transition-all ${
-                              selectedLocations.has(loc.id)
-                                ? "bg-black text-white"
-                                : "bg-off-white text-smoky hover:bg-gray-200"
-                            }`}
-                          >
-                            {loc.label}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Print methods */}
                   {selectedProduct.printMethods && selectedProduct.printMethods.length > 0 && (
-                    <div className="mb-4">
-                      <p className="text-[10px] tracking-[0.15em] uppercase text-smoky mb-2 flex items-center gap-1">
-                        <Printer size={12} />
-                        Decoration Methods Available
-                      </p>
-                      <div className="flex flex-wrap gap-1.5">
-                        {selectedProduct.printMethods.map((method) => (
-                          <span
-                            key={method}
-                            className="px-2.5 py-1 bg-off-white text-[10px] tracking-wide text-smoky capitalize"
-                          >
-                            {method.replace(/_/g, " ")}
-                          </span>
-                        ))}
-                      </div>
+                    <div className="flex flex-wrap gap-1.5">
+                      {selectedProduct.printMethods.map((method) => (
+                        <span
+                          key={method}
+                          className="px-2 py-1 bg-off-white text-[9px] tracking-wide text-smoky capitalize"
+                        >
+                          {method.replace(/_/g, " ")}
+                        </span>
+                      ))}
                     </div>
                   )}
-
-                  {/* Set price */}
-                  <div className="bg-off-white p-4 mb-4">
-                    <p className="text-xs font-semibold mb-2">
-                      Set Credit Price for Employees
-                    </p>
-                    <p className="text-[10px] text-smoky mb-3">
-                      This is what employees will &quot;pay&quot; in credits
-                    </p>
-                    <div className="flex items-center gap-2">
-                      <span className="text-lg font-bold">$</span>
-                      <input
-                        type="number"
-                        placeholder="25.00"
-                        value={customPrice}
-                        onChange={(e) => setCustomPrice(e.target.value)}
-                        className="flex-1 px-3 py-2.5 border border-gray-200 text-sm focus:outline-none focus:border-kraft"
-                        step="0.01"
-                        min="0"
-                      />
-                    </div>
-                  </div>
-
-                  {/* Add button */}
-                  <button
-                    onClick={() =>
-                      handleAddToStore(
-                        selectedProduct,
-                        customPrice ? Math.round(parseFloat(customPrice) * 100) : 2500
-                      )
-                    }
-                    disabled={addingId === selectedProduct.id}
-                    className="w-full bg-black text-white py-3.5 text-sm tracking-[0.12em] uppercase font-medium flex items-center justify-center gap-2 hover:bg-brown transition-colors disabled:opacity-50"
-                  >
-                    {addingId === selectedProduct.id ? (
-                      <Loader2 size={16} className="animate-spin" />
-                    ) : (
-                      <>
-                        <Plus size={16} />
-                        Add to Store
-                        {customPrice && ` — $${parseFloat(customPrice).toFixed(2)}`}
-                      </>
-                    )}
-                  </button>
                 </div>
               </div>
+
+              {/* Step 1: Choose Colors */}
+              {selectedProduct.colors && selectedProduct.colors.length > 0 && (
+                <div className="border-t border-gray-100 pt-6">
+                  <div className="flex items-center gap-2 mb-3">
+                    <span className="w-6 h-6 bg-black text-white text-xs font-bold flex items-center justify-center">1</span>
+                    <p className="text-sm font-semibold">Choose Colors</p>
+                    {selectedColors.size > 0 && (
+                      <span className="text-[10px] text-kraft-dark ml-auto">
+                        {selectedColors.size} selected
+                      </span>
+                    )}
+                  </div>
+                  <p className="text-[10px] text-smoky mb-3">
+                    Select which colors you want available for your team
+                  </p>
+                  <div className="flex flex-wrap gap-2">
+                    {selectedProduct.colors.map((color) => (
+                      <button
+                        key={color}
+                        onClick={() => toggleColor(color)}
+                        className={`px-3 py-2 text-[10px] tracking-wide border transition-all ${
+                          selectedColors.has(color)
+                            ? "border-black bg-black text-white"
+                            : "border-gray-200 text-smoky hover:border-kraft"
+                        }`}
+                      >
+                        {color}
+                      </button>
+                    ))}
+                  </div>
+                  {selectedProduct.colors.length > 5 && (
+                    <button
+                      onClick={() => {
+                        if (selectedColors.size === selectedProduct.colors!.length) {
+                          setSelectedColors(new Set());
+                        } else {
+                          setSelectedColors(new Set(selectedProduct.colors!));
+                        }
+                      }}
+                      className="text-[10px] text-kraft-dark hover:text-black mt-2 underline"
+                    >
+                      {selectedColors.size === selectedProduct.colors.length ? "Deselect All" : "Select All Colors"}
+                    </button>
+                  )}
+                </div>
+              )}
+
+              {/* Step 2: Upload Logo */}
+              <div className="border-t border-gray-100 pt-6">
+                <div className="flex items-center gap-2 mb-3">
+                  <span className="w-6 h-6 bg-black text-white text-xs font-bold flex items-center justify-center">2</span>
+                  <p className="text-sm font-semibold">Upload Your Logo</p>
+                  {artworkUrl && (
+                    <Check size={14} className="text-success ml-auto" />
+                  )}
+                </div>
+
+                {artworkUrl ? (
+                  <div className="border border-kraft/30 bg-off-white p-3">
+                    <div className="flex items-center gap-3">
+                      <div className="w-16 h-16 bg-white border border-gray-200 flex items-center justify-center overflow-hidden flex-shrink-0">
+                        <img src={artworkUrl} alt="Artwork" className="max-w-full max-h-full object-contain" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-xs font-medium truncate">{artworkName}</p>
+                        <p className="text-[10px] text-success mt-0.5">Uploaded</p>
+                      </div>
+                      <button
+                        onClick={() => { setArtworkUrl(null); setArtworkName(""); }}
+                        className="p-1.5 hover:bg-white transition-colors"
+                      >
+                        <Trash2 size={14} className="text-smoky" />
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <label className="border-2 border-dashed border-gray-200 hover:border-kraft p-8 flex flex-col items-center justify-center cursor-pointer transition-colors">
+                    <input type="file" accept=".png,.jpg,.jpeg,.svg,.pdf" onChange={handleFileUpload} className="hidden" />
+                    {uploading ? (
+                      <Loader2 size={28} className="text-kraft animate-spin mb-2" />
+                    ) : (
+                      <Upload size={28} className="text-kraft mb-2" />
+                    )}
+                    <p className="text-sm font-medium">
+                      {uploading ? "Uploading..." : "Click to upload your logo"}
+                    </p>
+                    <p className="text-[10px] text-smoky mt-1">PNG, JPG, SVG, or PDF — high resolution recommended</p>
+                  </label>
+                )}
+              </div>
+
+              {/* Step 3: Logo Placement */}
+              {selectedProduct.printLocations && selectedProduct.printLocations.length > 0 && (
+                <div className="border-t border-gray-100 pt-6">
+                  <div className="flex items-center gap-2 mb-3">
+                    <span className="w-6 h-6 bg-black text-white text-xs font-bold flex items-center justify-center">3</span>
+                    <p className="text-sm font-semibold">Logo Placement</p>
+                    {selectedLocations.size > 0 && (
+                      <span className="text-[10px] text-kraft-dark ml-auto">
+                        {selectedLocations.size} location{selectedLocations.size > 1 ? "s" : ""}
+                      </span>
+                    )}
+                  </div>
+                  <p className="text-[10px] text-smoky mb-3">
+                    Where should the logo go? Select one or more locations.
+                  </p>
+                  <div className="flex flex-wrap gap-2">
+                    {selectedProduct.printLocations.map((loc) => (
+                      <button
+                        key={loc.id}
+                        onClick={() => toggleLocation(loc.id)}
+                        className={`px-4 py-2 text-xs tracking-wide transition-all ${
+                          selectedLocations.has(loc.id)
+                            ? "bg-black text-white"
+                            : "bg-off-white text-smoky hover:bg-gray-200"
+                        }`}
+                      >
+                        {loc.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Pricing Summary */}
+              <div className="border-t border-gray-100 pt-6">
+                <div className="flex items-center gap-2 mb-3">
+                  <span className="w-6 h-6 bg-kraft text-black text-xs font-bold flex items-center justify-center">$</span>
+                  <p className="text-sm font-semibold">Your Price Per Item</p>
+                </div>
+                <p className="text-[10px] text-smoky mb-3">
+                  This is what each item will cost. Your employees will use credits to &quot;purchase&quot; items at this price.
+                </p>
+
+                <div className="bg-off-white p-4 space-y-3">
+                  <div className="flex items-center gap-3">
+                    <span className="text-2xl font-bold">$</span>
+                    <input
+                      type="number"
+                      placeholder="25.00"
+                      value={customPrice}
+                      onChange={(e) => setCustomPrice(e.target.value)}
+                      className="flex-1 px-4 py-3 border border-gray-200 text-lg font-semibold focus:outline-none focus:border-kraft"
+                      step="0.01"
+                      min="0"
+                    />
+                    <span className="text-sm text-smoky">per item</span>
+                  </div>
+
+                  {customPrice && (
+                    <div className="text-xs text-smoky space-y-1 pt-2 border-t border-gray-200">
+                      <div className="flex justify-between">
+                        <span>10 employees × ${parseFloat(customPrice || "0").toFixed(2)}</span>
+                        <span className="font-medium text-black">
+                          ${(parseFloat(customPrice || "0") * 10).toFixed(2)} total
+                        </span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span>25 employees × ${parseFloat(customPrice || "0").toFixed(2)}</span>
+                        <span className="font-medium text-black">
+                          ${(parseFloat(customPrice || "0") * 25).toFixed(2)} total
+                        </span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span>50 employees × ${parseFloat(customPrice || "0").toFixed(2)}</span>
+                        <span className="font-medium text-black">
+                          ${(parseFloat(customPrice || "0") * 50).toFixed(2)} total
+                        </span>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Add to Store button */}
+              <button
+                onClick={() =>
+                  handleAddToStore(
+                    selectedProduct,
+                    customPrice ? Math.round(parseFloat(customPrice) * 100) : 2500
+                  )
+                }
+                disabled={addingId === selectedProduct.id || !customPrice}
+                className={`w-full py-4 text-sm tracking-[0.15em] uppercase font-medium flex items-center justify-center gap-2 transition-all ${
+                  !customPrice
+                    ? "bg-gray-200 text-gray-400 cursor-not-allowed"
+                    : addingId === selectedProduct.id
+                      ? "bg-gray-300 text-gray-500"
+                      : "bg-black text-white hover:bg-brown"
+                }`}
+              >
+                {addingId === selectedProduct.id ? (
+                  <Loader2 size={16} className="animate-spin" />
+                ) : (
+                  <>
+                    <Plus size={16} />
+                    {customPrice
+                      ? `Add to Store — $${parseFloat(customPrice).toFixed(2)} per item`
+                      : "Set a price to continue"}
+                  </>
+                )}
+              </button>
             </div>
           </div>
         </div>
