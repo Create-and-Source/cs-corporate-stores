@@ -238,11 +238,9 @@ function parseCSVLine(line: string): string[] {
   return result;
 }
 
-// Build SSActivewear product image URL from their SKU
-function buildSSActivewearImage(ssaSku: string | null): string | null {
-  if (!ssaSku) return null;
-  // SSActivewear image URL pattern
-  return `https://www.ssactivewear.com/Images/Style/${ssaSku}_fm.jpg`;
+// FE doesn't provide images via API — return null, frontend shows placeholder
+function buildSSActivewearImage(_ssaSku: string | null): string | null {
+  return null;
 }
 
 function formatLocationLabel(id: string): string {

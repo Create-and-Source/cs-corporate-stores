@@ -1,122 +1,132 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useParams } from "next/navigation";
 import { StoreHeader } from "@/components/store/StoreHeader";
 import { HeroBanner } from "@/components/store/HeroBanner";
 import { CategoryBar } from "@/components/store/CategoryBar";
 import { ProductCard } from "@/components/store/ProductCard";
 import { StoreFooter } from "@/components/store/StoreFooter";
+import { useCart } from "@/lib/cart";
+import { supabase } from "@/lib/supabase";
+import { Package } from "lucide-react";
 
-// Demo data — will be replaced with Supabase queries
-const DEMO_STORE = {
-  slug: "acme-corp",
-  company_name: "ACME Corporation",
-  logo_url: null,
-  welcome_message:
-    "Celebrate your achievements with premium company merch. Use your credits to gear up.",
-};
+interface Product {
+  id: string;
+  name: string;
+  price: number;
+  images: string[];
+  category: string;
+  colors: string[];
+}
 
-const DEMO_PRODUCTS = [
-  {
-    id: "1",
-    name: "Classic Logo Tee",
-    price: 2800,
-    images: ["/placeholder-tee.jpg"],
-    category: "Apparel",
-    colors: ["#000000", "#FFFFFF", "#1a365d", "#7A6A5B"],
-  },
-  {
-    id: "2",
-    name: "Performance Hoodie",
-    price: 5500,
-    images: ["/placeholder-hoodie.jpg"],
-    category: "Apparel",
-    colors: ["#000000", "#1a365d", "#3D1C1C"],
-  },
-  {
-    id: "3",
-    name: "Structured Cap",
-    price: 2200,
-    images: ["/placeholder-cap.jpg"],
-    category: "Headwear",
-    colors: ["#000000", "#FFFFFF", "#C4A882"],
-  },
-  {
-    id: "4",
-    name: "Insulated Water Bottle",
-    price: 3200,
-    images: ["/placeholder-bottle.jpg"],
-    category: "Drinkware",
-    colors: ["#000000", "#FFFFFF"],
-  },
-  {
-    id: "5",
-    name: "Quarter Zip Pullover",
-    price: 6200,
-    images: ["/placeholder-quarterzip.jpg"],
-    category: "Apparel",
-    colors: ["#000000", "#1a365d"],
-  },
-  {
-    id: "6",
-    name: "Embroidered Beanie",
-    price: 1800,
-    images: ["/placeholder-beanie.jpg"],
-    category: "Headwear",
-    colors: ["#000000", "#3D1C1C", "#7A6A5B"],
-  },
-  {
-    id: "7",
-    name: "Canvas Tote Bag",
-    price: 2400,
-    images: ["/placeholder-tote.jpg"],
-    category: "Accessories",
-    colors: ["#F5F2EE", "#000000"],
-  },
-  {
-    id: "8",
-    name: "Premium Notebook Set",
-    price: 1600,
-    images: ["/placeholder-notebook.jpg"],
-    category: "Office",
-    colors: ["#000000"],
-  },
-];
+interface Store {
+  slug: string;
+  company_name: string;
+  logo_url: string | null;
+  welcome_message: string | null;
+  hero_image_url: string | null;
+}
 
-const CATEGORIES = ["Apparel", "Headwear", "Drinkware", "Accessories", "Office"];
+export default function StorePage() {
+  const params = useParams();
+  const slug = params.slug as string;
+  const cart = useCart();
 
-export default function StorePage({
-  params,
-}: {
-  params: Promise<{ slug: string }>;
-}) {
+  const [store, setStore] = useState<Store | null>(null);
+  const [products, setProducts] = useState<Product[]>([]);
+  const [categories, setCategories] = useState<string[]>([]);
   const [activeCategory, setActiveCategory] = useState("all");
+  const [loading, setLoading] = useState(true);
+  const [creditBalance, setCreditBalance] = useState(0);
+
+  useEffect(() => {
+    async function load() {
+      // Load store
+      const { data: storeData } = await supabase
+        .from("stores")
+        .select("*")
+        .eq("slug", slug)
+        .single();
+
+      if (storeData) {
+        setStore(storeData);
+
+        // Load products for this store
+        const { data: productData } = await supabase
+          .from("products")
+          .select("*")
+          .eq("store_id", storeData.id)
+          .eq("is_active", true);
+
+        if (productData) {
+          setProducts(productData);
+          const cats = [...new Set(productData.map((p: Product) => p.category).filter(Boolean))];
+          setCategories(cats as string[]);
+        }
+
+        // Load credit balance (using first user for demo)
+        const { data: creditData } = await supabase
+          .from("credit_balances")
+          .select("balance")
+          .eq("store_id", storeData.id)
+          .limit(1)
+          .single();
+
+        if (creditData) {
+          setCreditBalance(creditData.balance);
+        }
+      }
+      setLoading(false);
+    }
+    load();
+  }, [slug]);
 
   const filteredProducts =
     activeCategory === "all"
-      ? DEMO_PRODUCTS
-      : DEMO_PRODUCTS.filter((p) => p.category === activeCategory);
+      ? products
+      : products.filter((p) => p.category === activeCategory);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-white flex items-center justify-center">
+        <div className="animate-pulse text-smoky">Loading store...</div>
+      </div>
+    );
+  }
+
+  if (!store) {
+    return (
+      <div className="min-h-screen bg-white flex items-center justify-center">
+        <div className="text-center">
+          <Package size={48} className="mx-auto text-kraft mb-4" />
+          <h2 className="text-xl font-bold mb-2">Store Not Found</h2>
+          <a href="/" className="text-kraft-dark hover:text-black text-sm">Go Home</a>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-white">
       <StoreHeader
-        companyName={DEMO_STORE.company_name}
-        logoUrl={DEMO_STORE.logo_url}
-        creditBalance={15000}
-        cartCount={2}
+        companyName={store.company_name}
+        logoUrl={store.logo_url}
+        creditBalance={creditBalance}
+        cartCount={cart.count}
         isAdmin={true}
-        storeSlug={DEMO_STORE.slug}
+        storeSlug={store.slug}
       />
 
       <HeroBanner
-        companyName={DEMO_STORE.company_name}
-        welcomeMessage={DEMO_STORE.welcome_message}
+        companyName={store.company_name}
+        welcomeMessage={store.welcome_message}
+        heroImage={store.hero_image_url}
       />
 
-      {/* Products Section */}
       <div id="products">
         <CategoryBar
-          categories={CATEGORIES}
+          categories={categories}
           active={activeCategory}
           onSelect={setActiveCategory}
         />
@@ -131,23 +141,30 @@ export default function StorePage({
             </p>
           </div>
 
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-x-6 gap-y-10">
-            {filteredProducts.map((product) => (
-              <ProductCard
-                key={product.id}
-                name={product.name}
-                price={product.price}
-                image={product.images[0]}
-                category={product.category}
-                colors={product.colors}
-                href={`/store/${DEMO_STORE.slug}/products/${product.id}`}
-              />
-            ))}
-          </div>
+          {filteredProducts.length === 0 ? (
+            <div className="text-center py-16">
+              <Package size={48} className="mx-auto text-kraft mb-4" />
+              <p className="text-smoky">No products in this category yet</p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-x-6 gap-y-10">
+              {filteredProducts.map((product) => (
+                <ProductCard
+                  key={product.id}
+                  name={product.name}
+                  price={product.price}
+                  image={product.images?.[0] || ""}
+                  category={product.category}
+                  colors={product.colors || []}
+                  href={`/store/${store.slug}/products/${product.id}`}
+                />
+              ))}
+            </div>
+          )}
         </div>
       </div>
 
-      <StoreFooter companyName={DEMO_STORE.company_name} />
+      <StoreFooter companyName={store.company_name} />
     </div>
   );
 }

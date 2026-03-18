@@ -81,12 +81,36 @@ export default function CatalogPage() {
     setPage(1);
   };
 
-  const handleAddToStore = (product: CatalogProduct) => {
+  const handleAddToStore = async (product: CatalogProduct) => {
     setAddingId(product.id);
-    setTimeout(() => {
-      setAddedProducts((prev) => new Set([...prev, product.id]));
-      setAddingId(null);
-    }, 600);
+    try {
+      const res = await fetch(
+        "/api/stores/a1b2c3d4-e5f6-7890-abcd-ef1234567890/products",
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            name: product.name,
+            description: product.description,
+            price: 2500, // Default price, admin can adjust later
+            cost: 1000,
+            category: product.category,
+            provider: product.provider,
+            providerId: product.providerId,
+            images: product.image ? [product.image] : [],
+            sizes: [],
+            colors: [],
+          }),
+        }
+      );
+
+      if (res.ok) {
+        setAddedProducts((prev) => new Set([...prev, product.id]));
+      }
+    } catch (e) {
+      console.error("Failed to add product:", e);
+    }
+    setAddingId(null);
   };
 
   return (
