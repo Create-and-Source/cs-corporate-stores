@@ -9,10 +9,12 @@ import {
   Loader2,
   ChevronLeft,
   ChevronRight,
+  X,
+  MapPin,
+  Printer,
 } from "lucide-react";
 import { StoreHeader } from "@/components/store/StoreHeader";
 import { StoreFooter } from "@/components/store/StoreFooter";
-import { Button } from "@/components/ui/Button";
 
 interface CatalogProduct {
   id: string;
@@ -22,6 +24,9 @@ interface CatalogProduct {
   category: string;
   provider: "fulfill_engine" | "printify";
   providerId: string;
+  printLocations?: Array<{ id: string; label: string }>;
+  printMethods?: string[];
+  brand?: string;
 }
 
 export default function CatalogPage() {
@@ -36,6 +41,8 @@ export default function CatalogPage() {
   const [total, setTotal] = useState(0);
   const [addedProducts, setAddedProducts] = useState<Set<string>>(new Set());
   const [addingId, setAddingId] = useState<string | null>(null);
+  const [selectedProduct, setSelectedProduct] = useState<CatalogProduct | null>(null);
+  const [customPrice, setCustomPrice] = useState("");
 
   const fetchCatalog = useCallback(async () => {
     setLoading(true);
@@ -81,7 +88,7 @@ export default function CatalogPage() {
     setPage(1);
   };
 
-  const handleAddToStore = async (product: CatalogProduct) => {
+  const handleAddToStore = async (product: CatalogProduct, price?: number) => {
     setAddingId(product.id);
     try {
       const res = await fetch(
@@ -92,7 +99,7 @@ export default function CatalogPage() {
           body: JSON.stringify({
             name: product.name,
             description: product.description,
-            price: 2500, // Default price, admin can adjust later
+            price: price || 2500,
             cost: 1000,
             category: product.category,
             provider: product.provider,
@@ -106,6 +113,8 @@ export default function CatalogPage() {
 
       if (res.ok) {
         setAddedProducts((prev) => new Set([...prev, product.id]));
+        setSelectedProduct(null);
+        setCustomPrice("");
       }
     } catch (e) {
       console.error("Failed to add product:", e);
@@ -136,7 +145,7 @@ export default function CatalogPage() {
             </h1>
             <p className="text-smoky text-sm mt-1">
               {total.toLocaleString()} products available.
-              Add items to your store.
+              Click a product to see details and set pricing before adding.
             </p>
           </div>
           <div className="text-right">
@@ -205,23 +214,28 @@ export default function CatalogPage() {
           </div>
         ) : (
           <>
-            {/* Product Grid — compact cards */}
+            {/* Product Grid */}
             <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3">
               {products.map((product) => {
                 const isAdded = addedProducts.has(product.id);
-                const isAdding = addingId === product.id;
 
                 return (
-                  <div
+                  <button
                     key={product.id}
-                    className={`border transition-all ${
+                    onClick={() => {
+                      if (!isAdded) {
+                        setSelectedProduct(product);
+                        setCustomPrice("");
+                      }
+                    }}
+                    className={`border transition-all text-left ${
                       isAdded
                         ? "border-success/30 bg-success/5"
-                        : "border-gray-100 hover:border-kraft"
+                        : "border-gray-100 hover:border-kraft hover:shadow-md cursor-pointer"
                     }`}
                   >
-                    {/* Small product image */}
-                    <div className="aspect-square bg-off-white overflow-hidden">
+                    {/* Product image */}
+                    <div className="aspect-square bg-off-white overflow-hidden relative">
                       {product.image ? (
                         <img
                           src={product.image}
@@ -230,8 +244,17 @@ export default function CatalogPage() {
                           loading="lazy"
                         />
                       ) : (
-                        <div className="w-full h-full flex items-center justify-center">
-                          <Package size={20} className="text-kraft" />
+                        <div className="w-full h-full flex flex-col items-center justify-center gap-2">
+                          <Package size={24} className="text-kraft" />
+                          <span className="text-[8px] tracking-wider uppercase text-smoky">
+                            {product.brand || product.category}
+                          </span>
+                        </div>
+                      )}
+
+                      {isAdded && (
+                        <div className="absolute top-2 right-2 bg-success text-white w-5 h-5 flex items-center justify-center">
+                          <Check size={12} />
                         </div>
                       )}
                     </div>
@@ -244,35 +267,17 @@ export default function CatalogPage() {
                       <h3 className="font-medium text-xs leading-tight mt-0.5 line-clamp-2">
                         {product.name}
                       </h3>
-
-                      {/* Add button */}
-                      <button
-                        onClick={() => handleAddToStore(product)}
-                        disabled={isAdded || isAdding}
-                        className={`w-full mt-2 py-1.5 text-[9px] tracking-[0.12em] uppercase font-medium flex items-center justify-center gap-1 transition-all ${
-                          isAdded
-                            ? "bg-success/10 text-success"
-                            : isAdding
-                              ? "bg-gray-100 text-smoky"
-                              : "bg-black text-white hover:bg-brown"
-                        }`}
-                      >
-                        {isAdded ? (
-                          <>
-                            <Check size={10} />
-                            Added
-                          </>
-                        ) : isAdding ? (
-                          <Loader2 size={10} className="animate-spin" />
-                        ) : (
-                          <>
-                            <Plus size={10} />
-                            Add to Store
-                          </>
-                        )}
-                      </button>
+                      {isAdded ? (
+                        <p className="mt-2 text-[9px] tracking-wider uppercase text-success font-medium">
+                          Added to Store
+                        </p>
+                      ) : (
+                        <p className="mt-2 text-[9px] tracking-wider uppercase text-smoky">
+                          Click for details
+                        </p>
+                      )}
                     </div>
-                  </div>
+                  </button>
                 );
               })}
             </div>
@@ -283,7 +288,7 @@ export default function CatalogPage() {
                 <button
                   onClick={() => setPage((p) => Math.max(1, p - 1))}
                   disabled={page === 1}
-                  className="p-2 border border-gray-200 hover:border-kraft disabled:opacity-30 disabled:hover:border-gray-200 transition-colors"
+                  className="p-2 border border-gray-200 hover:border-kraft disabled:opacity-30 transition-colors"
                 >
                   <ChevronLeft size={16} />
                 </button>
@@ -294,7 +299,7 @@ export default function CatalogPage() {
                 <button
                   onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
                   disabled={page === totalPages}
-                  className="p-2 border border-gray-200 hover:border-kraft disabled:opacity-30 disabled:hover:border-gray-200 transition-colors"
+                  className="p-2 border border-gray-200 hover:border-kraft disabled:opacity-30 transition-colors"
                 >
                   <ChevronRight size={16} />
                 </button>
@@ -303,6 +308,146 @@ export default function CatalogPage() {
           </>
         )}
       </div>
+
+      {/* Product Detail Modal */}
+      {selectedProduct && (
+        <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
+          <div className="bg-white max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+            {/* Modal header */}
+            <div className="flex items-center justify-between p-5 border-b border-gray-100">
+              <h2 className="font-bold text-lg">Product Details</h2>
+              <button
+                onClick={() => setSelectedProduct(null)}
+                className="p-2 hover:bg-off-white transition-colors"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            <div className="p-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {/* Image */}
+                <div className="aspect-square bg-off-white flex items-center justify-center overflow-hidden">
+                  {selectedProduct.image ? (
+                    <img
+                      src={selectedProduct.image}
+                      alt={selectedProduct.name}
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <div className="text-center">
+                      <Package size={48} className="mx-auto text-kraft mb-3" />
+                      <p className="text-xs text-smoky">
+                        {selectedProduct.brand || selectedProduct.category}
+                      </p>
+                    </div>
+                  )}
+                </div>
+
+                {/* Details */}
+                <div>
+                  <span className="text-[10px] tracking-[0.15em] uppercase text-kraft-dark">
+                    {selectedProduct.category}
+                  </span>
+                  <h3 className="text-xl font-bold mt-1 mb-3">
+                    {selectedProduct.name}
+                  </h3>
+
+                  {selectedProduct.description && (
+                    <p className="text-sm text-smoky leading-relaxed mb-4">
+                      {selectedProduct.description}
+                    </p>
+                  )}
+
+                  {/* Print locations */}
+                  {selectedProduct.printLocations && selectedProduct.printLocations.length > 0 && (
+                    <div className="mb-4">
+                      <p className="text-[10px] tracking-[0.15em] uppercase text-smoky mb-2 flex items-center gap-1">
+                        <MapPin size={12} />
+                        Print Locations
+                      </p>
+                      <div className="flex flex-wrap gap-1.5">
+                        {selectedProduct.printLocations.map((loc) => (
+                          <span
+                            key={loc.id}
+                            className="px-2.5 py-1 bg-off-white text-[10px] tracking-wide text-smoky"
+                          >
+                            {loc.label}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Print methods */}
+                  {selectedProduct.printMethods && selectedProduct.printMethods.length > 0 && (
+                    <div className="mb-6">
+                      <p className="text-[10px] tracking-[0.15em] uppercase text-smoky mb-2 flex items-center gap-1">
+                        <Printer size={12} />
+                        Decoration Methods
+                      </p>
+                      <div className="flex flex-wrap gap-1.5">
+                        {selectedProduct.printMethods.map((method) => (
+                          <span
+                            key={method}
+                            className="px-2.5 py-1 bg-off-white text-[10px] tracking-wide text-smoky capitalize"
+                          >
+                            {method.replace(/_/g, " ")}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Set price */}
+                  <div className="bg-off-white p-4 mb-4">
+                    <p className="text-xs font-semibold mb-2">
+                      Set Credit Price for Employees
+                    </p>
+                    <p className="text-[10px] text-smoky mb-3">
+                      This is what employees will &quot;pay&quot; in credits
+                    </p>
+                    <div className="flex items-center gap-2">
+                      <span className="text-lg font-bold">$</span>
+                      <input
+                        type="number"
+                        placeholder="25.00"
+                        value={customPrice}
+                        onChange={(e) => setCustomPrice(e.target.value)}
+                        className="flex-1 px-3 py-2.5 border border-gray-200 text-sm focus:outline-none focus:border-kraft"
+                        step="0.01"
+                        min="0"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Add button */}
+                  <button
+                    onClick={() =>
+                      handleAddToStore(
+                        selectedProduct,
+                        customPrice ? Math.round(parseFloat(customPrice) * 100) : 2500
+                      )
+                    }
+                    disabled={addingId === selectedProduct.id}
+                    className="w-full bg-black text-white py-3.5 text-sm tracking-[0.12em] uppercase font-medium flex items-center justify-center gap-2 hover:bg-brown transition-colors disabled:opacity-50"
+                  >
+                    {addingId === selectedProduct.id ? (
+                      <Loader2 size={16} className="animate-spin" />
+                    ) : (
+                      <>
+                        <Plus size={16} />
+                        Add to Store
+                        {customPrice && ` — $${parseFloat(customPrice).toFixed(2)}`}
+                      </>
+                    )}
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       <StoreFooter companyName="ACME Corporation" />
     </div>

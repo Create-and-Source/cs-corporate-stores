@@ -23,11 +23,17 @@ export function ProductCard({
     <a href={href} className="group block">
       {/* Image */}
       <div className="relative aspect-square bg-off-white overflow-hidden mb-4">
-        <img
-          src={image}
-          alt={name}
-          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-        />
+        {image ? (
+          <img
+            src={image}
+            alt={name}
+            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+          />
+        ) : (
+          <div className="w-full h-full flex items-center justify-center">
+            <ShoppingBag size={32} className="text-kraft" />
+          </div>
+        )}
 
         {/* Quick add overlay */}
         <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors duration-300 flex items-end justify-center">
