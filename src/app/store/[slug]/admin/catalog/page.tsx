@@ -18,6 +18,7 @@ import {
 } from "lucide-react";
 import { StoreHeader } from "@/components/store/StoreHeader";
 import { StoreFooter } from "@/components/store/StoreFooter";
+import { MockupPreview } from "@/components/store/MockupPreview";
 
 interface CatalogProduct {
   id: string;
@@ -671,56 +672,46 @@ export default function CatalogPage() {
                     </div>
                   )}
 
-                  {/* FE products OR Printify before generate: Simple overlay preview */}
-                  {(selectedProduct.provider === "fulfill_engine" || (selectedProduct.provider === "printify" && !generatingMockup && mockupImages.length === 0)) && (
-                    <div className="bg-off-white border border-gray-100 overflow-hidden">
-                      <div className="relative aspect-square max-w-xs mx-auto">
-                        {/* Product image base */}
-                        {selectedProduct.image ? (
-                          <img
-                            src={selectedProduct.image}
-                            alt={selectedProduct.name}
-                            className="w-full h-full object-contain"
-                          />
-                        ) : (
-                          <div className="w-full h-full bg-gray-100 flex items-center justify-center">
-                            <div className="text-center">
-                              <Package size={48} className="mx-auto text-gray-300 mb-2" />
-                              <p className="text-xs text-gray-400">{selectedProduct.name}</p>
-                            </div>
-                          </div>
-                        )}
-
-                        {/* Logo overlay */}
-                        {artworkUrl && (
-                          <div
-                            className="absolute flex items-center justify-center"
-                            style={{
-                              // Position based on selected placement
-                              ...(selectedLocations.has("left_chest") || selectedLocations.has("Left Chest")
-                                ? { top: "28%", left: "25%", width: "20%", height: "15%" }
-                                : selectedLocations.has("right_chest") || selectedLocations.has("Right Chest")
-                                  ? { top: "28%", right: "25%", width: "20%", height: "15%" }
-                                  : selectedLocations.has("back") || selectedLocations.has("Back")
-                                    ? { top: "30%", left: "30%", width: "40%", height: "30%" }
-                                    : { top: "25%", left: "30%", width: "40%", height: "25%" }), // Default: center front
-                            }}
-                          >
-                            <img
-                              src={artworkUrl}
-                              alt="Logo preview"
-                              className="max-w-full max-h-full object-contain drop-shadow-md"
-                              style={{ opacity: 0.85 }}
+                  {/* FE products: Canvas mockup generator */}
+                  {selectedProduct.provider === "fulfill_engine" && (
+                    <div>
+                      {selectedLocations.size > 0 ? (
+                        <div className="grid grid-cols-2 gap-3">
+                          {Array.from(selectedLocations).map((loc) => (
+                            <MockupPreview
+                              key={loc}
+                              productImage={selectedProduct.image}
+                              productName={selectedProduct.name}
+                              logoUrl={artworkUrl}
+                              placement={loc}
+                              productCategory={selectedProduct.category}
                             />
-                          </div>
-                        )}
-                      </div>
-                      <p className="text-[9px] text-smoky text-center py-2 bg-white border-t border-gray-100">
-                        {selectedProduct.provider === "fulfill_engine"
-                          ? "Preview — actual mockup may vary based on decoration method"
-                          : "Quick preview — click Generate Mockup for a realistic version"}
+                          ))}
+                        </div>
+                      ) : (
+                        <MockupPreview
+                          productImage={selectedProduct.image}
+                          productName={selectedProduct.name}
+                          logoUrl={artworkUrl}
+                          placement="front"
+                          productCategory={selectedProduct.category}
+                        />
+                      )}
+                      <p className="text-[9px] text-smoky text-center mt-2">
+                        Preview — select logo placements below to see different positions
                       </p>
                     </div>
+                  )}
+
+                  {/* Printify: Show quick preview before generating full mockup */}
+                  {selectedProduct.provider === "printify" && !generatingMockup && mockupImages.length === 0 && (
+                    <MockupPreview
+                      productImage={selectedProduct.image}
+                      productName={selectedProduct.name}
+                      logoUrl={artworkUrl}
+                      placement="front"
+                      productCategory={selectedProduct.category}
+                    />
                   )}
                 </div>
               )}
