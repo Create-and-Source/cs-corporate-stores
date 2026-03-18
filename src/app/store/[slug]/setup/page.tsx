@@ -825,11 +825,16 @@ function ProductDetailModal({ product, isSelected, onClose, onToggle, storeSlug 
       } catch {}
       setLoadingTiers(false);
 
-      // Printify product details (colors, sizes, all images)
-      if (product.provider === "printify") {
+      // Product details (colors, sizes, images) — Printify or FE via SSActivewear
+      if (product.provider === "printify" || product.provider === "fulfill_engine") {
         setLoadingDetails(true);
         try {
-          const res = await fetch(`/api/catalog/product-details?blueprintId=${product.providerId}&provider=printify`);
+          const detailParams = new URLSearchParams({
+            blueprintId: product.providerId,
+            provider: product.provider,
+            ...(product.name && { productName: product.name }),
+          });
+          const res = await fetch(`/api/catalog/product-details?${detailParams}`);
           if (res.ok) {
             const data = await res.json();
             if (data.colors?.length) setDetailedColors(data.colors);

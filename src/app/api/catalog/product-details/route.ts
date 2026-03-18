@@ -153,6 +153,81 @@ export async function GET(req: NextRequest) {
     }
   }
 
+  // Fulfill Engine products — get color images from SSActivewear
+  if (provider === "fulfill_engine") {
+    const productName = req.nextUrl.searchParams.get("productName") || "";
+    const brand = req.nextUrl.searchParams.get("brand") || "";
+
+    try {
+      const { getStyles, getProducts: getSSAProducts, ssaImageUrl } = await import("@/lib/ssactivewear");
+      const styles = await getStyles();
+
+      // Find matching SSA style by brand + style name
+      const searchTerms = `${brand} ${productName}`.toLowerCase().split(/\s+/).filter((w) => w.length > 2);
+      let matchedStyle = styles.find((s) => {
+        const styleTxt = `${s.brandName} ${s.styleName} ${s.title}`.toLowerCase();
+        return searchTerms.filter((t) => styleTxt.includes(t)).length >= 2;
+      });
+
+      if (!matchedStyle && brand) {
+        // Try brand-only match
+        matchedStyle = styles.find((s) =>
+          s.brandName.toLowerCase().includes(brand.toLowerCase()) &&
+          (s.title || s.styleName).toLowerCase().split(/\s+/).some((w) => productName.toLowerCase().includes(w))
+        );
+      }
+
+      if (matchedStyle) {
+        const products = await getSSAProducts(matchedStyle.styleID);
+
+        // Extract unique colors with images
+        const colorImages: Record<string, string> = {};
+        const colors: string[] = [];
+        const sizes = new Set<string>();
+        const seenColors = new Set<string>();
+
+        for (const p of products) {
+          if (p.colorName && !seenColors.has(p.colorName)) {
+            seenColors.add(p.colorName);
+            colors.push(p.colorName);
+            const img = ssaImageUrl(p.colorFrontImage);
+            if (img) colorImages[p.colorName] = img;
+          }
+          if (p.sizeName) sizes.add(p.sizeName);
+        }
+
+        const description = (matchedStyle.description || matchedStyle.title || "")
+          .replace(/<[^>]*>/g, "")
+          .replace(/\s+/g, " ")
+          .trim();
+
+        return NextResponse.json({
+          id: matchedStyle.styleID,
+          title: matchedStyle.title || matchedStyle.styleName,
+          description,
+          images: [ssaImageUrl(matchedStyle.styleImage)].filter(Boolean),
+          colors,
+          sizes: Array.from(sizes),
+          colorImages,
+        });
+      }
+
+      // No SSA match found — return basic info
+      return NextResponse.json({
+        id: blueprintId,
+        title: productName,
+        description: "",
+        images: [],
+        colors: [],
+        sizes: [],
+        colorImages: {},
+      });
+    } catch (e) {
+      console.error("FE product details error:", e);
+      return NextResponse.json({ error: "Failed to fetch product details" }, { status: 500 });
+    }
+  }
+
   return NextResponse.json({ error: "Provider not supported" }, { status: 400 });
 }
 
