@@ -66,6 +66,90 @@ interface CatalogProduct {
   colors?: string[];
 }
 
+// ── Product Bundles ──
+const BUNDLES = [
+  {
+    id: "essentials",
+    name: "Essentials",
+    description: "The 4 items every store starts with",
+    icon: "👕",
+    color: "#1A1A1A",
+    searches: ["polo", "tee", "hoodie", "cap"],
+  },
+  {
+    id: "new-hire",
+    name: "New Hire Kit",
+    description: "Welcome pack for day one",
+    icon: "🎁",
+    color: "#2D5A3D",
+    searches: ["tee", "hoodie", "cap", "tote bag", "water bottle"],
+  },
+  {
+    id: "corporate",
+    name: "Corporate Office",
+    description: "Business casual for the team",
+    icon: "💼",
+    color: "#3D4A5C",
+    searches: ["polo", "quarter zip", "button", "laptop bag", "dress shirt"],
+  },
+  {
+    id: "restaurant",
+    name: "Restaurant & Hospitality",
+    description: "Kitchen and front-of-house essentials",
+    icon: "🍽️",
+    color: "#8B4513",
+    searches: ["tee", "apron", "cap", "polo"],
+  },
+  {
+    id: "trades",
+    name: "Trades & Outdoor",
+    description: "Jobsite-ready gear that lasts",
+    icon: "🔧",
+    color: "#B8860B",
+    searches: ["jacket", "beanie", "vest", "work", "hi-vis"],
+  },
+  {
+    id: "fitness",
+    name: "Fitness & Wellness",
+    description: "Performance gear for active teams",
+    icon: "💪",
+    color: "#4A6741",
+    searches: ["performance tee", "tank", "jogger", "duffel", "quarter zip"],
+  },
+  {
+    id: "premium",
+    name: "Premium Brands",
+    description: "Nike, Under Armour, Columbia, North Face",
+    icon: "⭐",
+    color: "#1A1A1A",
+    searches: ["nike", "under armour", "columbia", "north face"],
+  },
+  {
+    id: "event",
+    name: "Event & Conference",
+    description: "Swag bag essentials",
+    icon: "🎪",
+    color: "#6B3FA0",
+    searches: ["tee", "tote", "tumbler", "cap", "notebook"],
+  },
+  {
+    id: "best-sellers",
+    name: "Best Sellers",
+    description: "Top-moving items across all categories",
+    icon: "🔥",
+    color: "#CC4422",
+    searches: ["bella canvas tee", "gildan hoodie", "richardson cap", "champion", "next level"],
+  },
+  {
+    id: "seasonal",
+    name: "Seasonal Picks",
+    description: "Curated for right now",
+    icon: "🌤️",
+    color: "#2E86AB",
+    searches: ["lightweight", "pullover", "performance polo", "visor", "short sleeve"],
+  },
+];
+
 export default function SetupPage() {
   const params = useParams();
   const slug = params.slug as string;
@@ -93,6 +177,52 @@ export default function SetupPage() {
   const [catalogPage, setCatalogPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [previewProduct, setPreviewProduct] = useState<CatalogProduct | null>(null);
+
+  // Bundle state
+  const [loadingBundle, setLoadingBundle] = useState<string | null>(null);
+  const [showCatalog, setShowCatalog] = useState(false);
+
+  const loadBundle = async (bundle: typeof BUNDLES[0]) => {
+    setLoadingBundle(bundle.id);
+    const bundleProducts: CatalogProduct[] = [];
+
+    for (const search of bundle.searches) {
+      try {
+        const params = new URLSearchParams({ search, page: "1" });
+        const res = await fetch(`/api/catalog?${params}`);
+        const result = await res.json();
+        // Take first 2 products with images from each search
+        const good = (result.products || [])
+          .filter((p: CatalogProduct) => p.hasImage)
+          .slice(0, 2);
+        for (const p of good) {
+          if (!bundleProducts.find((bp) => bp.id === p.id)) {
+            bundleProducts.push(p);
+          }
+        }
+      } catch {}
+    }
+
+    // Add all bundle products to selection
+    setData((prev) => {
+      const existing = new Set(prev.selectedProducts.map((p) => p.id));
+      const newProducts = bundleProducts
+        .filter((p) => !existing.has(p.id))
+        .map((p) => ({
+          id: p.id,
+          name: p.name,
+          image: p.image,
+          category: p.category,
+          price: p.clientPrice,
+        }));
+      return {
+        ...prev,
+        selectedProducts: [...prev.selectedProducts, ...newProducts],
+      };
+    });
+
+    setLoadingBundle(null);
+  };
 
   // Load saved progress
   useEffect(() => {
@@ -442,6 +572,66 @@ export default function SetupPage() {
               </div>
             )}
 
+            {/* ── Bundles Section ── */}
+            {!showCatalog && (
+              <div className="mb-8">
+                <div className="flex items-center gap-2 mb-4">
+                  <Layers size={16} className="text-kraft-dark" />
+                  <p className="text-sm font-semibold">Quick Start — Pick a Bundle</p>
+                  <p className="text-[10px] text-smoky ml-1">Pre-curated collections to get you started fast</p>
+                </div>
+
+                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3 mb-6">
+                  {BUNDLES.map((bundle) => (
+                    <button
+                      key={bundle.id}
+                      onClick={() => loadBundle(bundle)}
+                      disabled={loadingBundle !== null}
+                      className="border border-gray-100 hover:border-kraft hover:shadow-md transition-all text-left p-4 group disabled:opacity-50"
+                    >
+                      <div className="flex items-center gap-2 mb-2">
+                        <span className="text-xl">{bundle.icon}</span>
+                        {loadingBundle === bundle.id && (
+                          <Loader2 size={14} className="animate-spin text-kraft" />
+                        )}
+                      </div>
+                      <p className="text-sm font-semibold group-hover:text-kraft-dark transition-colors">
+                        {bundle.name}
+                      </p>
+                      <p className="text-[10px] text-smoky leading-relaxed mt-1">
+                        {bundle.description}
+                      </p>
+                    </button>
+                  ))}
+                </div>
+
+                <div className="flex items-center gap-4">
+                  <div className="flex-1 h-px bg-gray-200" />
+                  <button
+                    onClick={() => setShowCatalog(true)}
+                    className="text-[10px] tracking-[0.15em] uppercase text-smoky hover:text-black transition-colors flex items-center gap-1"
+                  >
+                    Or browse the full catalog
+                    <ChevronRight size={12} />
+                  </button>
+                  <div className="flex-1 h-px bg-gray-200" />
+                </div>
+              </div>
+            )}
+
+            {/* ── Full Catalog ── */}
+            {showCatalog && (
+              <>
+                <div className="flex items-center gap-2 mb-4">
+                  <button
+                    onClick={() => setShowCatalog(false)}
+                    className="text-[10px] tracking-[0.15em] uppercase text-smoky hover:text-black transition-colors flex items-center gap-1"
+                  >
+                    <ChevronLeft size={12} />
+                    Back to Bundles
+                  </button>
+                </div>
+
             {/* Smart Search */}
             <div className="mb-4">
               <SmartSearch
@@ -561,6 +751,9 @@ export default function SetupPage() {
                   </div>
                 )}
               </>
+            )}
+            {/* end showCatalog */}
+            </>
             )}
           </div>
         )}
