@@ -273,61 +273,24 @@ export function ProductConfigurator({
         </div>
       )}
 
-      {/* Live Mockup Preview */}
+      {/* Live Mockup Preview — instant client-side overlay for all products */}
       {configuredPlacements.length > 0 && (
         <div>
           <p className="text-xs font-semibold mb-3 flex items-center gap-2">
             Preview
           </p>
-
-          {/* Printify: use real mockup API */}
-          {productProvider === "printify" && printifyMockups.length > 0 ? (
-            <div className="grid grid-cols-2 gap-2">
-              {printifyMockups.slice(0, 4).map((url, i) => (
-                <div key={i} className="bg-off-white border border-gray-100 overflow-hidden">
-                  <img src={url} alt={`Mockup ${i + 1}`} className="w-full h-auto" />
-                </div>
-              ))}
-            </div>
-          ) : productProvider === "printify" && !generatingMockup ? (
-            <button
-              onClick={generatePrintifyMockup}
-              className="w-full bg-black text-white py-3 text-xs tracking-[0.1em] uppercase font-medium hover:bg-brown transition-colors"
-            >
-              Generate Realistic Mockup
-            </button>
-          ) : productProvider !== "printify" ? (
-            /* FE products: canvas overlay mockup */
-            <div className={`grid gap-3 ${configuredPlacements.length > 1 ? "grid-cols-2" : "grid-cols-1 max-w-xs"}`}>
-              {configuredPlacements.map((placement) => (
-                <MockupPreview
-                  key={placement.locationId}
-                  productImage={productImage}
-                  productName={productName}
-                  logoUrl={placement.logoUrl!}
-                  placement={placement.locationId}
-                  productCategory={productCategory}
-                />
-              ))}
-            </div>
-          ) : null}
-
-          {generatingMockup && (
-            <div className="mt-3 bg-off-white p-4 flex items-center justify-center gap-2">
-              <Loader2 size={16} className="animate-spin text-kraft" />
-              <span className="text-xs text-smoky">Generating mockup...</span>
-            </div>
-          )}
-
-          {printifyMockups.length > 0 && productProvider !== "printify" && (
-            <div className="grid grid-cols-2 gap-2 mt-3">
-              {printifyMockups.map((url, i) => (
-                <div key={i} className="bg-off-white border border-gray-100 overflow-hidden">
-                  <img src={url} alt={`Mockup ${i + 1}`} className="w-full h-auto" />
-                </div>
-              ))}
-            </div>
-          )}
+          <div className={`grid gap-3 ${configuredPlacements.length > 1 ? "grid-cols-2" : "grid-cols-1 max-w-xs"}`}>
+            {configuredPlacements.map((placement) => (
+              <MockupPreview
+                key={placement.locationId}
+                productImage={productImage}
+                productName={productName}
+                logoUrl={placement.logoUrl!}
+                placement={placement.locationId}
+                productCategory={productCategory}
+              />
+            ))}
+          </div>
         </div>
       )}
     </div>

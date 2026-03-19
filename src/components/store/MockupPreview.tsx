@@ -65,10 +65,30 @@ export function MockupPreview({
     canvas.width = size;
     canvas.height = size;
 
-    // Get placement position
-    const pos = PLACEMENT_POSITIONS[placement] ||
+    // Get placement position — adjust by product category
+    const cat = (productCategory || "").toLowerCase();
+    let pos = PLACEMENT_POSITIONS[placement] ||
       PLACEMENT_POSITIONS[placement.toLowerCase().replace(/\s+/g, "_")] ||
       PLACEMENT_POSITIONS.center;
+
+    // Category-specific overrides for better placement
+    if (cat.includes("drinkware") || cat.includes("mug") || cat.includes("tumbler") || cat.includes("bottle")) {
+      pos = placement.includes("wrap") || placement.includes("around")
+        ? { x: 0.18, y: 0.25, w: 0.64, h: 0.45 }
+        : { x: 0.25, y: 0.30, w: 0.50, h: 0.35 };
+    } else if (cat.includes("headwear") || cat.includes("hat") || cat.includes("cap")) {
+      pos = { x: 0.28, y: 0.25, w: 0.44, h: 0.30 };
+    } else if (cat.includes("bag") || cat.includes("tote") || cat.includes("backpack")) {
+      pos = placement.includes("front") || placement === "center"
+        ? { x: 0.25, y: 0.25, w: 0.50, h: 0.40 }
+        : pos;
+    } else if (cat.includes("blanket") || cat.includes("home") || cat.includes("pillow") || cat.includes("towel")) {
+      pos = { x: 0.25, y: 0.25, w: 0.50, h: 0.50 };
+    } else if (cat.includes("wall") || cat.includes("poster") || cat.includes("canvas")) {
+      pos = { x: 0.15, y: 0.15, w: 0.70, h: 0.70 };
+    } else if (cat.includes("phone") || cat.includes("tech") || cat.includes("case")) {
+      pos = { x: 0.20, y: 0.25, w: 0.60, h: 0.50 };
+    }
 
     const drawMockup = async () => {
       // Clear
