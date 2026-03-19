@@ -179,48 +179,38 @@ export default function SetupPage() {
   const [previewProduct, setPreviewProduct] = useState<CatalogProduct | null>(null);
 
   // Bundle state
+  const [activeBundle, setActiveBundle] = useState<string | null>(null);
+  const [bundleProducts, setBundleProducts] = useState<CatalogProduct[]>([]);
   const [loadingBundle, setLoadingBundle] = useState<string | null>(null);
-  const [showCatalog, setShowCatalog] = useState(false);
 
   const loadBundle = async (bundle: typeof BUNDLES[0]) => {
-    setLoadingBundle(bundle.id);
-    const bundleProducts: CatalogProduct[] = [];
+    if (activeBundle === bundle.id) {
+      // Deselect — go back to full catalog
+      setActiveBundle(null);
+      setBundleProducts([]);
+      return;
+    }
 
+    setActiveBundle(bundle.id);
+    setLoadingBundle(bundle.id);
+    setBundleProducts([]);
+
+    const results: CatalogProduct[] = [];
     for (const search of bundle.searches) {
       try {
         const params = new URLSearchParams({ search, page: "1" });
         const res = await fetch(`/api/catalog?${params}`);
         const result = await res.json();
-        // Take first 2 products with images from each search
-        const good = (result.products || [])
-          .filter((p: CatalogProduct) => p.hasImage)
-          .slice(0, 2);
+        const good = (result.products || []).slice(0, 6);
         for (const p of good) {
-          if (!bundleProducts.find((bp) => bp.id === p.id)) {
-            bundleProducts.push(p);
+          if (!results.find((r) => r.id === p.id)) {
+            results.push(p);
           }
         }
       } catch {}
     }
 
-    // Add all bundle products to selection
-    setData((prev) => {
-      const existing = new Set(prev.selectedProducts.map((p) => p.id));
-      const newProducts = bundleProducts
-        .filter((p) => !existing.has(p.id))
-        .map((p) => ({
-          id: p.id,
-          name: p.name,
-          image: p.image,
-          category: p.category,
-          price: p.clientPrice,
-        }));
-      return {
-        ...prev,
-        selectedProducts: [...prev.selectedProducts, ...newProducts],
-      };
-    });
-
+    setBundleProducts(results);
     setLoadingBundle(null);
   };
 
@@ -572,189 +562,224 @@ export default function SetupPage() {
               </div>
             )}
 
-            {/* ── Bundles Section ── */}
-            {!showCatalog && (
-              <div className="mb-8">
-                <div className="flex items-center gap-2 mb-4">
-                  <Layers size={16} className="text-kraft-dark" />
-                  <p className="text-sm font-semibold">Quick Start — Pick a Bundle</p>
-                  <p className="text-[10px] text-smoky ml-1">Pre-curated collections to get you started fast</p>
-                </div>
+            {/* ── Main layout: Bundles sidebar + Product grid ── */}
+            <div className="flex gap-6">
 
-                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3 mb-6">
-                  {BUNDLES.map((bundle) => (
+              {/* Bundles Sidebar */}
+              <div className="w-48 flex-shrink-0 hidden md:block">
+                <div className="sticky top-28">
+                  <p className="text-[10px] tracking-[0.15em] uppercase text-smoky mb-3 flex items-center gap-1.5">
+                    <Layers size={12} />
+                    Bundles
+                  </p>
+                  <div className="space-y-1">
                     <button
-                      key={bundle.id}
-                      onClick={() => loadBundle(bundle)}
-                      disabled={loadingBundle !== null}
-                      className="border border-gray-100 hover:border-kraft hover:shadow-md transition-all text-left p-4 group disabled:opacity-50"
+                      onClick={() => { setActiveBundle(null); setBundleProducts([]); }}
+                      className={`w-full text-left px-3 py-2.5 text-xs transition-all ${
+                        !activeBundle
+                          ? "bg-black text-white font-medium"
+                          : "text-smoky hover:bg-off-white hover:text-black"
+                      }`}
                     >
-                      <div className="flex items-center gap-2 mb-2">
-                        <span className="text-xl">{bundle.icon}</span>
-                        {loadingBundle === bundle.id && (
-                          <Loader2 size={14} className="animate-spin text-kraft" />
-                        )}
-                      </div>
-                      <p className="text-sm font-semibold group-hover:text-kraft-dark transition-colors">
-                        {bundle.name}
-                      </p>
-                      <p className="text-[10px] text-smoky leading-relaxed mt-1">
-                        {bundle.description}
-                      </p>
+                      All Products
                     </button>
-                  ))}
-                </div>
-
-                <div className="flex items-center gap-4">
-                  <div className="flex-1 h-px bg-gray-200" />
-                  <button
-                    onClick={() => setShowCatalog(true)}
-                    className="text-[10px] tracking-[0.15em] uppercase text-smoky hover:text-black transition-colors flex items-center gap-1"
-                  >
-                    Or browse the full catalog
-                    <ChevronRight size={12} />
-                  </button>
-                  <div className="flex-1 h-px bg-gray-200" />
-                </div>
-              </div>
-            )}
-
-            {/* ── Full Catalog ── */}
-            {showCatalog && (
-              <>
-                <div className="flex items-center gap-2 mb-4">
-                  <button
-                    onClick={() => setShowCatalog(false)}
-                    className="text-[10px] tracking-[0.15em] uppercase text-smoky hover:text-black transition-colors flex items-center gap-1"
-                  >
-                    <ChevronLeft size={12} />
-                    Back to Bundles
-                  </button>
-                </div>
-
-            {/* Smart Search */}
-            <div className="mb-4">
-              <SmartSearch
-                onSearch={(q) => { setSearchInput(q); setCatalogPage(1); }}
-                onCategorySelect={(cat) => { setActiveCategory(cat); setCatalogPage(1); }}
-              />
-            </div>
-
-            <div className="flex flex-wrap gap-1.5 mb-6">
-              <button
-                onClick={() => { setActiveCategory("All"); setCatalogPage(1); }}
-                className={`px-3 py-1.5 text-[10px] tracking-[0.1em] uppercase ${
-                  activeCategory === "All" ? "bg-black text-white" : "bg-off-white text-smoky hover:text-black"
-                }`}
-              >
-                All
-              </button>
-              {categories.map((cat) => (
-                <button
-                  key={cat}
-                  onClick={() => { setActiveCategory(cat); setCatalogPage(1); }}
-                  className={`px-3 py-1.5 text-[10px] tracking-[0.1em] uppercase ${
-                    activeCategory === cat ? "bg-black text-white" : "bg-off-white text-smoky hover:text-black"
-                  }`}
-                >
-                  {cat}
-                </button>
-              ))}
-            </div>
-
-            {/* Product Grid */}
-            {catalogLoading ? (
-              <div className="flex items-center justify-center py-16">
-                <Loader2 size={24} className="animate-spin text-kraft" />
-              </div>
-            ) : (
-              <>
-                <div className="grid grid-cols-3 md:grid-cols-5 lg:grid-cols-6 gap-3">
-                  {products.map((product) => {
-                    const isSelected = data.selectedProducts.some((p) => p.id === product.id);
-                    return (
-                      <div
-                        key={product.id}
-                        className={`border text-left transition-all ${
-                          isSelected
-                            ? "border-success bg-success/5 ring-2 ring-success/20"
-                            : "border-gray-100 hover:border-kraft"
+                    {BUNDLES.map((bundle) => (
+                      <button
+                        key={bundle.id}
+                        onClick={() => loadBundle(bundle)}
+                        disabled={loadingBundle !== null && loadingBundle !== bundle.id}
+                        className={`w-full text-left px-3 py-2.5 text-xs transition-all flex items-center gap-2 disabled:opacity-40 ${
+                          activeBundle === bundle.id
+                            ? "bg-black text-white font-medium"
+                            : "text-smoky hover:bg-off-white hover:text-black"
                         }`}
                       >
-                        <button
-                          onClick={() => setPreviewProduct(product)}
-                          className="w-full"
-                        >
-                          <div className="aspect-square bg-off-white overflow-hidden relative">
-                            {product.image ? (
-                              <img src={product.image} alt={product.name} className="w-full h-full object-contain p-2" loading="lazy" />
-                            ) : (
-                              <div className="w-full h-full flex items-center justify-center">
-                                <Package size={20} className="text-kraft" />
-                              </div>
-                            )}
-                            {isSelected && (
-                              <div className="absolute top-1 right-1 bg-success text-white w-5 h-5 flex items-center justify-center">
-                                <Check size={12} />
-                              </div>
-                            )}
-                          </div>
-                          <div className="p-2">
-                            <p className="text-[9px] tracking-wider uppercase text-kraft-dark">{product.category}</p>
-                            <p className="text-xs font-medium line-clamp-2 mt-0.5">{product.name}</p>
-                            {product.clientPrice && (
-                              <p className="text-xs font-bold mt-1">${(product.clientPrice / 100).toFixed(2)}</p>
-                            )}
-                          </div>
-                        </button>
-                        <div className="px-2 pb-2">
-                          <button
-                            onClick={() => toggleProduct(product)}
-                            className={`w-full py-1.5 text-[9px] tracking-[0.1em] uppercase font-medium flex items-center justify-center gap-1 transition-all ${
-                              isSelected
-                                ? "bg-success/10 text-success"
-                                : "bg-black text-white hover:bg-brown"
-                            }`}
-                          >
-                            {isSelected ? (
-                              <><Check size={10} /> Selected</>
-                            ) : (
-                              <><Plus size={10} /> Add</>
-                            )}
-                          </button>
-                        </div>
-                      </div>
-                    );
-                  })}
+                        <span>{bundle.icon}</span>
+                        <span className="truncate">{bundle.name}</span>
+                        {loadingBundle === bundle.id && (
+                          <Loader2 size={10} className="animate-spin ml-auto flex-shrink-0" />
+                        )}
+                      </button>
+                    ))}
+                  </div>
                 </div>
+              </div>
 
-                {/* Pagination */}
-                {totalPages > 1 && (
-                  <div className="flex items-center justify-center gap-4 mt-8">
+              {/* Product Grid Area */}
+              <div className="flex-1 min-w-0">
+
+                {/* Bundle header when active */}
+                {activeBundle && (
+                  <div className="bg-off-white border border-kraft/20 p-4 mb-5 flex items-center justify-between">
+                    <div>
+                      <p className="font-semibold text-sm flex items-center gap-2">
+                        <span className="text-lg">{BUNDLES.find(b => b.id === activeBundle)?.icon}</span>
+                        {BUNDLES.find(b => b.id === activeBundle)?.name}
+                      </p>
+                      <p className="text-[10px] text-smoky mt-0.5">
+                        {BUNDLES.find(b => b.id === activeBundle)?.description} — {bundleProducts.length} products
+                      </p>
+                    </div>
                     <button
-                      onClick={() => setCatalogPage((p) => Math.max(1, p - 1))}
-                      disabled={catalogPage === 1}
-                      className="px-3 py-2 border border-gray-200 text-sm disabled:opacity-30"
+                      onClick={() => { setActiveBundle(null); setBundleProducts([]); }}
+                      className="text-[10px] tracking-[0.1em] uppercase text-smoky hover:text-black flex items-center gap-1"
                     >
-                      Previous
-                    </button>
-                    <span className="text-sm text-smoky">
-                      Page {catalogPage} of {totalPages}
-                    </span>
-                    <button
-                      onClick={() => setCatalogPage((p) => Math.min(totalPages, p + 1))}
-                      disabled={catalogPage === totalPages}
-                      className="px-3 py-2 border border-gray-200 text-sm disabled:opacity-30"
-                    >
-                      Next
+                      <X size={12} /> Clear
                     </button>
                   </div>
                 )}
-              </>
-            )}
-            {/* end showCatalog */}
-            </>
-            )}
+
+                {/* Mobile bundle selector */}
+                <div className="md:hidden mb-4 overflow-x-auto">
+                  <div className="flex gap-1.5">
+                    <button
+                      onClick={() => { setActiveBundle(null); setBundleProducts([]); }}
+                      className={`px-3 py-1.5 text-[10px] tracking-[0.1em] uppercase flex-shrink-0 ${
+                        !activeBundle ? "bg-black text-white" : "bg-off-white text-smoky"
+                      }`}
+                    >
+                      All
+                    </button>
+                    {BUNDLES.map((bundle) => (
+                      <button
+                        key={bundle.id}
+                        onClick={() => loadBundle(bundle)}
+                        className={`px-3 py-1.5 text-[10px] tracking-[0.1em] flex-shrink-0 flex items-center gap-1 ${
+                          activeBundle === bundle.id ? "bg-black text-white" : "bg-off-white text-smoky"
+                        }`}
+                      >
+                        {bundle.icon} {bundle.name}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Search + Categories (when browsing all) */}
+                {!activeBundle && (
+                  <>
+                    <div className="mb-4">
+                      <SmartSearch
+                        onSearch={(q) => { setSearchInput(q); setCatalogPage(1); }}
+                        onCategorySelect={(cat) => { setActiveCategory(cat); setCatalogPage(1); }}
+                      />
+                    </div>
+
+                    <div className="flex flex-wrap gap-1.5 mb-6">
+                      <button
+                        onClick={() => { setActiveCategory("All"); setCatalogPage(1); }}
+                        className={`px-3 py-1.5 text-[10px] tracking-[0.1em] uppercase ${
+                          activeCategory === "All" ? "bg-black text-white" : "bg-off-white text-smoky hover:text-black"
+                        }`}
+                      >
+                        All
+                      </button>
+                      {categories.map((cat) => (
+                        <button
+                          key={cat}
+                          onClick={() => { setActiveCategory(cat); setCatalogPage(1); }}
+                          className={`px-3 py-1.5 text-[10px] tracking-[0.1em] uppercase ${
+                            activeCategory === cat ? "bg-black text-white" : "bg-off-white text-smoky hover:text-black"
+                          }`}
+                        >
+                          {cat}
+                        </button>
+                      ))}
+                    </div>
+                  </>
+                )}
+
+                {/* Product Grid */}
+                {(activeBundle ? loadingBundle : catalogLoading) ? (
+                  <div className="flex items-center justify-center py-16">
+                    <Loader2 size={24} className="animate-spin text-kraft" />
+                  </div>
+                ) : (
+                  <>
+                    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+                      {(activeBundle ? bundleProducts : products).map((product) => {
+                        const isSelected = data.selectedProducts.some((p) => p.id === product.id);
+                        return (
+                          <div
+                            key={product.id}
+                            className={`border text-left transition-all ${
+                              isSelected
+                                ? "border-success bg-success/5 ring-2 ring-success/20"
+                                : "border-gray-100 hover:border-kraft"
+                            }`}
+                          >
+                            <button
+                              onClick={() => setPreviewProduct(product)}
+                              className="w-full"
+                            >
+                              <div className="aspect-square bg-off-white overflow-hidden relative">
+                                {product.image ? (
+                                  <img src={product.image} alt={product.name} className="w-full h-full object-contain p-2" loading="lazy" />
+                                ) : (
+                                  <div className="w-full h-full flex items-center justify-center">
+                                    <Package size={20} className="text-kraft" />
+                                  </div>
+                                )}
+                                {isSelected && (
+                                  <div className="absolute top-1 right-1 bg-success text-white w-5 h-5 flex items-center justify-center">
+                                    <Check size={12} />
+                                  </div>
+                                )}
+                              </div>
+                              <div className="p-2">
+                                <p className="text-[9px] tracking-wider uppercase text-kraft-dark">{product.category}</p>
+                                <p className="text-xs font-medium line-clamp-2 mt-0.5">{product.name}</p>
+                                {product.clientPrice && (
+                                  <p className="text-xs font-bold mt-1">${(product.clientPrice / 100).toFixed(2)}</p>
+                                )}
+                              </div>
+                            </button>
+                            <div className="px-2 pb-2">
+                              <button
+                                onClick={() => toggleProduct(product)}
+                                className={`w-full py-1.5 text-[9px] tracking-[0.1em] uppercase font-medium flex items-center justify-center gap-1 transition-all ${
+                                  isSelected
+                                    ? "bg-success/10 text-success"
+                                    : "bg-black text-white hover:bg-brown"
+                                }`}
+                              >
+                                {isSelected ? (
+                                  <><Check size={10} /> Selected</>
+                                ) : (
+                                  <><Plus size={10} /> Add</>
+                                )}
+                              </button>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+
+                    {/* Pagination (only for full catalog, not bundles) */}
+                    {!activeBundle && totalPages > 1 && (
+                      <div className="flex items-center justify-center gap-4 mt-8">
+                        <button
+                          onClick={() => setCatalogPage((p) => Math.max(1, p - 1))}
+                          disabled={catalogPage === 1}
+                          className="px-3 py-2 border border-gray-200 text-sm disabled:opacity-30"
+                        >
+                          Previous
+                        </button>
+                        <span className="text-sm text-smoky">
+                          Page {catalogPage} of {totalPages}
+                        </span>
+                        <button
+                          onClick={() => setCatalogPage((p) => Math.min(totalPages, p + 1))}
+                          disabled={catalogPage === totalPages}
+                          className="px-3 py-2 border border-gray-200 text-sm disabled:opacity-30"
+                        >
+                          Next
+                        </button>
+                      </div>
+                    )}
+                  </>
+                )}
+              </div>
+            </div>
           </div>
         )}
 
