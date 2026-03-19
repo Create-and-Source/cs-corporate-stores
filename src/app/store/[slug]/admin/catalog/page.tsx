@@ -37,6 +37,7 @@ export default function CatalogPage() {
   const params = useParams();
   const slug = params.slug as string;
   const [storeName, setStoreName] = useState("Store");
+  const [storeId, setStoreId] = useState<string | null>(null);
   const [products, setProducts] = useState<CatalogProduct[]>([]);
   const [categories, setCategories] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
@@ -65,8 +66,11 @@ export default function CatalogPage() {
 
   useEffect(() => {
     async function loadStore() {
-      const { data: store } = await supabase.from("stores").select("company_name").eq("slug", slug).single();
-      if (store) setStoreName(store.company_name || "Store");
+      const { data: store } = await supabase.from("stores").select("id, company_name").eq("slug", slug).single();
+      if (store) {
+        setStoreName(store.company_name || "Store");
+        setStoreId(store.id);
+      }
     }
     loadStore();
   }, [slug]);
@@ -167,10 +171,11 @@ export default function CatalogPage() {
   };
 
   const handleAddToStore = async (product: CatalogProduct, price?: number) => {
+    if (!storeId) return;
     setAddingId(product.id);
     try {
       const res = await fetch(
-        "/api/stores/a1b2c3d4-e5f6-7890-abcd-ef1234567890/products",
+        `/api/stores/${storeId}/products`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -529,11 +534,11 @@ export default function CatalogPage() {
                   productCategory={selectedProduct.category}
                   productProvider={selectedProduct.provider}
                   productBlueprintId={selectedProduct.providerId}
-                  storeSlug="acme-corp"
+                  storeSlug={slug}
                   locations={
                     selectedProduct.printLocations && selectedProduct.printLocations.length > 0
                       ? selectedProduct.printLocations
-                      : getDefaultLocations(selectedProduct.category)
+                      : getDefaultLocations(selectedProduct.category, selectedProduct.name)
                   }
                   selectedColor={selectedColors.size > 0 ? Array.from(selectedColors)[0] : undefined}
                   onConfigChange={() => {}}
@@ -664,8 +669,16 @@ export default function CatalogPage() {
 }
 
 // Default print locations by product category
-function getDefaultLocations(category: string): Array<{ id: string; label: string }> {
+function getDefaultLocations(category: string, productName?: string): Array<{ id: string; label: string }> {
   const cat = category.toLowerCase();
+  const name = (productName || "").toLowerCase();
+
+  // Product-name-specific overrides: single-surface items
+  if (name.includes("coaster") || name.includes("mousepad") || name.includes("sticker") ||
+      name.includes("patch") || name.includes("magnet") || name.includes("keychain") ||
+      name.includes("poster") || name.includes("canvas") || name.includes("wall art")) {
+    return [{ id: "front", label: "Full Print" }];
+  }
 
   if (cat.includes("shirt") || cat.includes("tee") || cat.includes("top") || cat.includes("polo") || cat.includes("apparel")) {
     return [

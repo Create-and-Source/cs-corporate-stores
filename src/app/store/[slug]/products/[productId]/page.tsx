@@ -75,7 +75,7 @@ export default function ProductDetailPage() {
       productId: product.id,
       name: product.name,
       price: product.price,
-      image: product.images?.[0] || null,
+      image: (selectedColor && product.color_images?.[selectedColor]) || product.images?.[0] || null,
       size: selectedSize,
       color: selectedColor,
       quantity,
@@ -140,7 +140,7 @@ export default function ProductDetailPage() {
                 <img
                   src={displayImg}
                   alt={product.name}
-                  className="w-full h-full object-cover"
+                  className="w-full h-full object-contain"
                 />
               ) : (
                 <Package size={64} className="text-kraft" />

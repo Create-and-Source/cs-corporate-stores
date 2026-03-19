@@ -227,16 +227,26 @@ export async function GET(req: NextRequest) {
         ssaStyleMap.set(s.styleName.toLowerCase(), { styleImage: s.styleImage, brandName: s.brandName });
       }
 
-      // Match FE products to SSA by ssaSku or brand+style name
+      // Match FE products to SSA by brand name + style-specific words
       for (const product of allProducts) {
         if (product.provider !== "fulfill_engine") continue;
         if (product.hasImage) continue; // Already has an image
 
-        // Try matching by product name keywords against SSA style names
-        const nameParts = product.name.toLowerCase().split(/\s+/);
+        const productNameLower = product.name.toLowerCase();
+        const brandLower = (product.brand || "").toLowerCase();
+        // Common short words to ignore when matching
+        const ignoreWords = new Set(["the", "men", "tee", "hat", "top", "for", "and", "with", "new", "pro", "dry", "fit", "cap", "bag", "all"]);
+
         for (const [styleName, ssaInfo] of ssaStyleMap) {
-          if (nameParts.some((part) => part.length > 2 && styleName.includes(part)) ||
-              styleName.split(/\s+/).some((sp) => sp.length > 2 && product.name.toLowerCase().includes(sp))) {
+          // Require brand match first
+          const ssaBrandLower = ssaInfo.brandName.toLowerCase();
+          if (!brandLower || (ssaBrandLower !== brandLower && !productNameLower.includes(ssaBrandLower))) continue;
+
+          // Count meaningful matching words (>3 chars and not in ignore list)
+          const nameParts = productNameLower.split(/\s+/).filter((w) => w.length > 3 && !ignoreWords.has(w));
+          const matchCount = nameParts.filter((part) => styleName.includes(part)).length;
+
+          if (matchCount >= 1) {
             const img = ssaImageUrl(ssaInfo.styleImage);
             if (img) {
               product.image = img;
@@ -334,29 +344,58 @@ function mapFECategory(name: string): string {
   if (n.includes("tee") || n.includes("shirt") || n.includes("tank") || n.includes("crew") || n.includes("jersey") || n.includes("henley")) return "T-Shirts & Tops";
   if (n.includes("jacket") || n.includes("vest") || n.includes("coat") || n.includes("puffer") || n.includes("windbreaker") || n.includes("softshell")) return "Outerwear";
   if (n.includes("cap") || n.includes("hat") || n.includes("beanie") || n.includes("visor") || n.includes("trucker")) return "Headwear";
+  if (n.includes("shorts") || n.includes("jogger") || n.includes("pant") || n.includes("legging")) return "Bottoms & Activewear";
   if (n.includes("mug") || n.includes("tumbler") || n.includes("bottle") || n.includes("cup") || n.includes("drinkware")) return "Drinkware";
   if (n.includes("bag") || n.includes("tote") || n.includes("backpack") || n.includes("duffel")) return "Bags";
+  if (n.includes("blanket") || n.includes("towel") || n.includes("pillow")) return "Home & Living";
+  if (n.includes("youth") || n.includes("baby") || n.includes("toddler") || n.includes("kid")) return "Kids & Baby";
+  if (n.includes("sock") || n.includes("shoe") || n.includes("slipper")) return "Footwear";
+  if (n.includes("sticker") || n.includes("patch") || n.includes("pin") || n.includes("keychain") || n.includes("magnet")) return "Accessories";
+  if (n.includes("notebook") || n.includes("planner") || n.includes("desk") || n.includes("coaster") || n.includes("mousepad")) return "Office";
+  if (n.includes("phone case") || n.includes("laptop sleeve")) return "Tech";
+  if (n.includes("poster") || n.includes("canvas print") || n.includes("frame")) return "Wall Art";
   if (n.includes("quarter zip") || n.includes("1/4 zip")) return "Quarter Zips";
   return "Other";
 }
 
 function mapPrintifyCategory(title: string): string {
   const t = title.toLowerCase();
-  // Check drinkware BEFORE shirts (to catch "travel mug", "steel tumbler", etc.)
-  if (t.includes("mug") || t.includes("tumbler") || t.includes("bottle") || t.includes("cup") || t.includes("can") || t.includes("glass") || t.includes("travel") || t.includes("water") || t.includes("thermos") || t.includes("flask") || t.includes("drinkware")) return "Drinkware";
+
+  // --- Multi-word phrases first (most specific) ---
+  // Drinkware: specific phrases to avoid false matches
+  if (t.includes("travel mug") || t.includes("travel tumbler")) return "Drinkware";
+  if (t.includes("water bottle")) return "Drinkware";
+  if (t.includes("wine glass") || t.includes("shot glass") || t.includes("pint glass") || t.includes("beer glass")) return "Drinkware";
+  // Wall Art: specific phrases to avoid "print" matching printed shirts
+  if (t.includes("art print") || t.includes("fine art") || t.includes("wall art")) return "Wall Art";
+  // Tech: specific phrases to avoid "case" matching pillowcase/suitcase
+  if (t.includes("phone case") || t.includes("laptop case") || t.includes("laptop sleeve")) return "Tech";
+
+  // --- Single-word safe matches ---
+  // Drinkware (safe single words that don't cause false matches)
+  if (t.includes("mug") || t.includes("tumbler") || t.includes("cup") || t.includes("thermos") || t.includes("flask") || t.includes("drinkware")) return "Drinkware";
+  // "can " with trailing space or end-of-string to avoid matching "canvas"
+  if (/\bcan\b/.test(t) && !t.includes("canvas")) return "Drinkware";
+
   if (t.includes("polo")) return "Polos";
   if (t.includes("hoodie") || t.includes("sweatshirt") || t.includes("pullover") || t.includes("crewneck")) return "Hoodies & Sweats";
   if (t.includes("shirt") || t.includes("tee") || t.includes("tank") || t.includes("crop") || t.includes("bodysuit")) return "T-Shirts & Tops";
   if (t.includes("jacket") || t.includes("vest") || t.includes("coat") || t.includes("windbreaker")) return "Outerwear";
   if (t.includes("hat") || t.includes("cap") || t.includes("beanie") || t.includes("visor") || t.includes("bucket")) return "Headwear";
   if (t.includes("bag") || t.includes("tote") || t.includes("backpack") || t.includes("pouch") || t.includes("fanny") || t.includes("duffel")) return "Bags";
-  if (t.includes("poster") || t.includes("canvas") || t.includes("print") || t.includes("frame") || t.includes("tapestry")) return "Wall Art";
-  if (t.includes("phone") || t.includes("case") || t.includes("laptop") || t.includes("mouse") || t.includes("airpod")) return "Tech";
-  if (t.includes("sticker") || t.includes("patch") || t.includes("pin") || t.includes("keychain") || t.includes("magnet")) return "Accessories";
-  if (t.includes("notebook") || t.includes("desk") || t.includes("pen") || t.includes("planner") || t.includes("coaster")) return "Office";
   if (t.includes("shorts") || t.includes("jogger") || t.includes("pant") || t.includes("legging") || t.includes("skirt") || t.includes("swim")) return "Bottoms & Activewear";
   if (t.includes("blanket") || t.includes("towel") || t.includes("pillow") || t.includes("mat") || t.includes("rug")) return "Home & Living";
   if (t.includes("onesie") || t.includes("baby") || t.includes("bib") || t.includes("kid") || t.includes("toddler") || t.includes("youth")) return "Kids & Baby";
   if (t.includes("sock") || t.includes("shoe") || t.includes("slipper") || t.includes("clog")) return "Footwear";
+  // Wall Art: safe single words
+  if (t.includes("poster") || t.includes("tapestry") || t.includes("frame")) return "Wall Art";
+  // Canvas: only wall art if not "canvas bag/tote" etc.
+  if (t.includes("canvas") && !t.includes("bag") && !t.includes("tote") && !t.includes("shoe")) return "Wall Art";
+  // Tech: safe single words
+  if (t.includes("mouse") || t.includes("airpod")) return "Tech";
+  if (t.includes("sticker") || t.includes("patch") || t.includes("pin") || t.includes("keychain") || t.includes("magnet")) return "Accessories";
+  if (t.includes("notebook") || t.includes("desk") || t.includes("pen") || t.includes("planner") || t.includes("coaster")) return "Office";
+  // Bottle without "water" context — still drinkware
+  if (t.includes("bottle")) return "Drinkware";
   return "Other";
 }

@@ -64,6 +64,7 @@ interface CatalogProduct {
   provider: string;
   providerId: string;
   colors?: string[];
+  colorImages?: Record<string, string>;
 }
 
 // ── Product Bundles ──
