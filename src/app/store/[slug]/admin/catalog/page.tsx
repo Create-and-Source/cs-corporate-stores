@@ -706,10 +706,22 @@ function getDefaultLocations(category: string): Array<{ id: string; label: strin
       { id: "back", label: "Back" },
     ];
   }
-  // Default
+  if (cat.includes("wall") || cat.includes("poster") || cat.includes("canvas") || cat.includes("art") ||
+      cat.includes("coaster") || cat.includes("mousepad") || cat.includes("sticker") || cat.includes("patch") ||
+      cat.includes("magnet") || cat.includes("keychain") || cat.includes("accessories")) {
+    return [{ id: "front", label: "Full Print" }];
+  }
+  if (cat.includes("blanket") || cat.includes("pillow") || cat.includes("towel") || cat.includes("home")) {
+    return [{ id: "front", label: "Full Print" }];
+  }
+  if (cat.includes("phone") || cat.includes("tech") || cat.includes("case")) {
+    return [{ id: "front", label: "Full Print" }];
+  }
+  if (cat.includes("office") || cat.includes("notebook") || cat.includes("journal")) {
+    return [{ id: "front", label: "Front Cover" }, { id: "back", label: "Back Cover" }];
+  }
+  // Default — single front placement
   return [
     { id: "front", label: "Front" },
-    { id: "back", label: "Back" },
-    { id: "left_chest", label: "Left Chest" },
   ];
 }

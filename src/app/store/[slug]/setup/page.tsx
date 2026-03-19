@@ -1361,7 +1361,14 @@ function ProductDetailModal({ product, isSelected, onClose, onToggle, storeSlug 
             </p>
             <ProductConfigurator
               productName={product.name}
-              productImage={product.image}
+              productImage={
+                // Use the selected color's image if available, otherwise the active gallery image
+                selectedProductColors.size > 0 && colorImages[Array.from(selectedProductColors)[0]]
+                  ? colorImages[Array.from(selectedProductColors)[0]]
+                  : productImages.length > 0
+                    ? productImages[activeImageIndex]
+                    : product.image
+              }
               productCategory={product.category}
               productProvider={product.provider}
               productBlueprintId={product.providerId}
@@ -1416,19 +1423,21 @@ function getDefaultLocations(category: string): Array<{ id: string; label: strin
     return [{ id: "wrap", label: "Wrap Around" }, { id: "front", label: "Front" }, { id: "laser_engrave", label: "Laser Engrave" }];
   if (cat.includes("bag") || cat.includes("tote") || cat.includes("backpack"))
     return [{ id: "front", label: "Front" }, { id: "back", label: "Back" }];
-  if (cat.includes("office") || cat.includes("notebook") || cat.includes("journal") || cat.includes("planner") || cat.includes("mousepad"))
+  if (cat.includes("office") || cat.includes("notebook") || cat.includes("journal") || cat.includes("planner"))
     return [{ id: "front", label: "Front Cover" }, { id: "back", label: "Back Cover" }];
+  if (cat.includes("coaster") || cat.includes("mousepad") || cat.includes("mouse pad") || cat.includes("desk"))
+    return [{ id: "front", label: "Full Print" }];
   if (cat.includes("wall") || cat.includes("poster") || cat.includes("canvas") || cat.includes("art"))
     return [{ id: "front", label: "Full Print" }];
   if (cat.includes("tech") || cat.includes("phone") || cat.includes("case") || cat.includes("laptop"))
-    return [{ id: "front", label: "Full Print" }, { id: "back", label: "Back" }];
+    return [{ id: "front", label: "Full Print" }];
   if (cat.includes("home") || cat.includes("blanket") || cat.includes("pillow") || cat.includes("towel"))
-    return [{ id: "front", label: "Front" }, { id: "back", label: "Back" }];
-  if (cat.includes("accessories") || cat.includes("sticker") || cat.includes("patch") || cat.includes("pin"))
+    return [{ id: "front", label: "Full Print" }];
+  if (cat.includes("accessories") || cat.includes("sticker") || cat.includes("patch") || cat.includes("pin") || cat.includes("magnet") || cat.includes("keychain"))
     return [{ id: "front", label: "Full Print" }];
   if (cat.includes("footwear") || cat.includes("sock") || cat.includes("shoe"))
-    return [{ id: "front", label: "Outside" }, { id: "back", label: "Sole" }];
-  return [{ id: "front", label: "Front" }, { id: "back", label: "Back" }];
+    return [{ id: "front", label: "Outside" }];
+  return [{ id: "front", label: "Front" }];
 }
 
 function Tooltip({ text }: { text: string }) {

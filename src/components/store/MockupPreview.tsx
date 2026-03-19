@@ -163,24 +163,18 @@ export function MockupPreview({
         const drawX = lx + (lw - drawW) / 2;
         const drawY = ly + (lh - drawH) / 2;
 
-        // Draw logo with multiply blend for realism on fabric
+        // Draw logo — use multiply blend on dark products, normal on light
+        // First pass: multiply for fabric realism
         ctx.save();
-        ctx.globalAlpha = 0.92;
+        ctx.globalAlpha = 0.85;
         ctx.globalCompositeOperation = "multiply";
         ctx.drawImage(logoImg, drawX, drawY, drawW, drawH);
         ctx.restore();
 
-        // Draw again on top with slight opacity for vibrancy
+        // Second pass: normal blend for vibrancy (stronger so logo is visible on light colors)
         ctx.save();
-        ctx.globalAlpha = 0.5;
+        ctx.globalAlpha = 0.75;
         ctx.drawImage(logoImg, drawX, drawY, drawW, drawH);
-        ctx.restore();
-
-        // Subtle shadow under logo
-        ctx.save();
-        ctx.globalAlpha = 0.04;
-        ctx.filter = "blur(4px)";
-        ctx.drawImage(logoImg, drawX + 2, drawY + 2, drawW, drawH);
         ctx.restore();
       } catch {
         // Logo failed to load — show placeholder

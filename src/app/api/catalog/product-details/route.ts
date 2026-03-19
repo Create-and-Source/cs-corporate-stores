@@ -16,12 +16,18 @@ const SIZE_VALUES = new Set(["XXS", "2XS", "XS", "S", "M", "L", "XL", "XXL", "2X
 
 // Detect if a value is a size (dimensions, measurements, or known size labels)
 function isSize(val: string): boolean {
+  const v = val.replace(/\.$/, "").trim(); // Strip trailing period
+  if (SIZE_VALUES.has(v)) return true;
   if (SIZE_VALUES.has(val)) return true;
-  // Match dimension patterns: 30" × 40", 11oz, 15oz, 8.5"x11", 30x40, etc.
-  if (/^\d+["']?\s*[×xX]\s*\d+["']?$/.test(val)) return true;
-  if (/^\d+\s*oz$/i.test(val)) return true;
-  if (/^\d+["']\s*$/.test(val)) return true;
-  if (/^\d+\.\d+["']?\s*[×xX]\s*\d+\.\d+["']?$/.test(val)) return true;
+  // Match dimension patterns: 30" × 40", 11oz, 15oz, 4 oz., 8.5"x11", 30x40, etc.
+  if (/^\d+["']?\s*[×xX]\s*\d+["']?$/.test(v)) return true;
+  if (/^\d+\.?\d*\s*oz\.?$/i.test(v)) return true;
+  if (/^\d+["']\s*$/.test(v)) return true;
+  if (/^\d+\.\d+["']?\s*[×xX]\s*\d+\.\d+["']?$/.test(v)) return true;
+  // Weight/volume patterns: 4 oz, 12 fl oz, 16oz, etc.
+  if (/^\d+\.?\d*\s*(fl\s*)?oz\.?$/i.test(val)) return true;
+  // Numeric-only values that look like quantities/weights
+  if (/^\d+(\.\d+)?\s*(ml|l|g|kg|lb|lbs|pt|qt|gal|in|cm|mm)\.?$/i.test(val)) return true;
   return false;
 }
 
