@@ -7,7 +7,7 @@ const PRINTIFY_SHOP_ID = process.env.PRINTIFY_SHOP_ID || "";
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const { blueprintId, imageUrl, position = "front", color } = body;
+    const { blueprintId, imageUrl, position = "front", color, category } = body;
 
     if (!blueprintId || !imageUrl) {
       return NextResponse.json(
@@ -107,22 +107,48 @@ export async function POST(req: NextRequest) {
     const allVariantIds = selectedVariants.map((v: { id: number }) => v.id);
 
     // Determine Printify placeholder position and image placement
-    // Printify doesn't have a "left_chest" position — use "front" with offset coordinates
+    // Printify positions: "front", "back", etc. — x/y are 0-1 center coords, scale is relative size
+    const cat = (category || "").toLowerCase();
+    const isDrinkware = cat.includes("drinkware") || cat.includes("mug") || cat.includes("tumbler") || cat.includes("bottle");
+    const isHeadwear = cat.includes("headwear") || cat.includes("hat") || cat.includes("cap") || cat.includes("beanie");
+    const isBag = cat.includes("bag") || cat.includes("tote") || cat.includes("backpack");
+    const isAccessory = cat.includes("accessory") || cat.includes("phone") || cat.includes("tech") || cat.includes("sticker");
+
     const isLeftChest = position === "left_chest";
     const isRightChest = position === "right_chest";
     const printifyPosition = (isLeftChest || isRightChest) ? "front" : position;
 
-    // Image placement: x/y are center coordinates (0-1), scale controls size
+    // Smart placement by product type
     let imgX = 0.5;
     let imgY = 0.5;
     let imgScale = 1;
 
-    if (isLeftChest) {
-      imgX = 0.34;   // Left side of chest
-      imgY = 0.39;   // Upper chest area
-      imgScale = 0.35; // Small logo
+    if (isDrinkware) {
+      // Center on the mug/tumbler surface
+      imgX = 0.5;
+      imgY = 0.45;
+      imgScale = 0.6;
+    } else if (isHeadwear) {
+      // Front panel of cap
+      imgX = 0.5;
+      imgY = 0.45;
+      imgScale = 0.5;
+    } else if (isBag) {
+      // Center of bag face
+      imgX = 0.5;
+      imgY = 0.45;
+      imgScale = 0.5;
+    } else if (isAccessory) {
+      // Center, fill more of the surface
+      imgX = 0.5;
+      imgY = 0.5;
+      imgScale = 0.7;
+    } else if (isLeftChest) {
+      imgX = 0.34;
+      imgY = 0.39;
+      imgScale = 0.35;
     } else if (isRightChest) {
-      imgX = 0.66;   // Right side of chest
+      imgX = 0.66;
       imgY = 0.39;
       imgScale = 0.35;
     }

@@ -135,6 +135,7 @@ export function ProductConfigurator({
           imageUrl,
           position: firstLogo.locationId,
           color: selectedColor || undefined,
+          category: productCategory,
         }),
       });
 
